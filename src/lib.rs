@@ -6,26 +6,29 @@ use prettytable::Table;
 /// including field separators, header rows, divider lines, and text width.
 #[allow(dead_code)]
 pub struct TableBuilder<'a> {
-	input: &'a str,                 // The text to be formatted
-	ifs: &'a str,                   // Input Field Separator
-	ofs: &'a str,                   // Output Field Separator
-	header_index: usize,            // Which row is the header or 0 for no header
-	header_count: usize,            // Which row is the header or 0 for no header
+	input:                 &'a str, // The text to be formatted
+	ifs:                   &'a str, // Input Field Separator
+	ofs:                   &'a str, // Output Field Separator
+	header_index:            usize, // Which row is the header or 0 for no header
+	header_count:            usize, // Which row is the header or 0 for no header
 	max_column_widths_index: usize, // A row containing max widths of each column or 0 not to bother
-	no_divider: bool,               // Whether to include a divider line ----
-	divider_char: char,             // Divider Character ----, ====, ####
-	max_cell_width: usize,          // Maximum width of a cell
-	truncate: bool,                 // truncate or wrap text to width of cell
-	pad_decimal_digits: bool,       // Do we align the decimals padding with 0 at the end if necessary
-	max_decimal_digits: usize,      // Limit the number of decimal places
-	decimal_separator: char,        // Character to display decimals 0.0, 0,0
-	use_thousand_separator: bool,   // Do we add thousands separator in output
-	thousand_separator: char,       // Separator for thousands, 0,000, 0.000
-	table: Table,                   // prettytable instance
+	no_divider:               bool, // Whether to include a divider line ----
+	divider_char:             char, // Divider Character ----, ====, ####
+	max_cell_width:          usize, // Maximum width of a cell
+	truncate:                 bool, // truncate or wrap text to width of cell
+	pad_decimal_digits:       bool, // Do we align the decimals padding with 0 at the end if necessary
+	max_decimal_digits:      usize, // Limit the number of decimal places
+	decimal_separator:        char, // Character to display decimals 0.0, 0,0
+	use_thousand_separator:   bool, // Do we add thousands separator in output
+	thousand_separator:       char, // Separator for thousands, 0,000, 0.000
+	align:                    bool, // Do we align numeric columns to the right
+	table:                   Table, // prettytable instance
 	max_column_widths: Vec<String>, // maximum width for each column
-	column_widths: Vec<String>,     // calculated width of each column
-	headers: Vec<Vec<String>>,      // header rows
-	data: Vec<Vec<String>>,         // data rows
+	column_widths:     Vec<String>, // calculated width of each column
+	headers:      Vec<Vec<String>>, // header rows
+	data:         Vec<Vec<String>>, // data rows
+	numeric_columns:     Vec<bool>, // which columns are determined to hold numeric data
+	column_count:            usize, // number of columns after parsing data
 }
 
 impl<'a> TableBuilder<'a> {
@@ -47,11 +50,14 @@ impl<'a> TableBuilder<'a> {
 			decimal_separator:        '.', // Default decimal separator
 			use_thousand_separator: false, // Default don't add thousand separator
 			thousand_separator:       ',', // Default thousand seperator char ,
+			align:                   true, // Default align numeric columns to the right
 			table:           Table::new(), // New prettytable
 			max_column_widths: Vec::new(), // unclaculated maximum column widths
 			column_widths:     Vec::new(), // uncalculated column widths
 			headers:           Vec::new(), // unextracted header rows
 			data:              Vec::new(), // unextracted data rows
+			numeric_columns:   Vec::new(), // uncalculated numeric columns
+			column_count:               0, // uncalculated column count
 		}
 	}
 
@@ -122,6 +128,11 @@ impl<'a> TableBuilder<'a> {
 
 	pub fn set_thousand_separator(&mut self, thousand_separator: char) -> &mut Self {
 		self.thousand_separator = thousand_separator;
+		self
+	}
+
+	pub fn set_align(&mut self, align: bool) -> &mut Self {
+		self.align = align;
 		self
 	}
 
