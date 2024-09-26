@@ -246,26 +246,26 @@ impl TableBuilder {
 		self.headers.as_ref().unwrap()
 	}
 
-    /// Processes the input data and updates relevant attributes.
-    ///
-    /// This method performs the following operations:
-    /// - Updates `self.data`, `self.numeric_columns`, and `self.data_column_widths`.
-    /// - Formats numeric values according to specified formatting options, while leaving text cells unchanged for now.
-    /// - The widths in `self.data_column_widths` will reflect the widths of both formatted numbers and unchanged text.
-    ///
-    /// If `self.data` is already set, the method returns a reference to the corresponding stored field.
-    /// Otherwise, it processes the input lines, excluding header rows and the column width limits row, 
-    /// and formats each cell based on its type, while also setting `self.numeric_columns`.
-    ///
-    /// # Returns
-    ///
-    /// * A reference to a vector of vectors containing the processed data. The structure reflects the rows and formatted cells.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// let processed_data = formatter.data();
-    /// ```
+	/// Processes the input data and updates relevant attributes.
+	///
+	/// This method performs the following operations:
+	/// - Updates `self.data`, `self.numeric_columns`, and `self.data_column_widths`.
+	/// - Formats numeric values according to specified formatting options, while leaving text cells unchanged for now.
+	/// - The widths in `self.data_column_widths` will reflect the widths of both formatted numbers and unchanged text.
+	///
+	/// If `self.data` is already set, the method returns a reference to the corresponding stored field.
+	/// Otherwise, it processes the input lines, excluding header rows and the column width limits row, 
+	/// and formats each cell based on its type, while also setting `self.numeric_columns`.
+	///
+	/// # Returns
+	///
+	/// * A reference to a vector of vectors containing the processed data. The structure reflects the rows and formatted cells.
+	///
+	/// # Example
+	///
+	/// ```
+	/// let processed_data = formatter.data();
+	/// ```
 	pub fn data(&mut self) -> &Vec<Vec<String>> {
 		// Check if data have already been processed and stored
 		if let Some(ref data) = self.data {
@@ -295,7 +295,7 @@ impl TableBuilder {
 				// Check each column for numeric values and format the cell
 				for (j, cell) in row.iter_mut().enumerate() {
 					let cell_value = cell.clone();
-               
+			   
 						let mut formatter = CellFormatter::new(cell_value)
 							.set_text_format(TextFormat::NoFormat)
 							.set_alignment(TextAlignment::NoAlignment)
@@ -336,23 +336,80 @@ impl TableBuilder {
 		self.data.as_ref().unwrap()
 	}
 
-//	pub fn column_widths(&mut self) -> &Vec<usize> {
-//
-//		// initialize column_widths, force set self.column_count
-//		let column_widths = vec![0; self.column_count()];
-//
-//		// set self.headers, self.header_column_widths
-//		let _headers = self.headers();
-//
-//		// unwrap self.header_column_widths
-//		let header_column_widths = self.header_column_widths();
-//
-//		// set self.data, self.numeric_columns, self.data_column_widths
-//		let _data = self.data();
-//
-//		// unwrap self.data_column_widths
-//		let data_column_widths = self.data_column_widths();
-//
-//	}
+	/// Calculates and returns the column widths used for formatting table output.
+	///
+	/// This method determines the optimal column widths based on the provided text format:
+	///
+	/// - If the `TextFormat` is set to `Truncate` or `NoFormat`, the column width for each column
+	///   is set to the maximum value between the corresponding header and data widths. This ensures
+	///   that the columns are wide enough to fit both header and data without truncation.
+	/// - If the `TextFormat` is set to `Wrap`, the column width for each column is set to the data width,
+	///   allowing text to wrap within the defined column width.
+	///
+	/// The method ensures that headers, data, and their respective column widths (`header_column_widths`
+	/// and `data_column_widths`) are initialized before computing the final column widths.
+	///
+	/// Once computed, the result is cached in `self.column_widths` to avoid redundant calculations
+	/// on subsequent calls.
+	///
+	/// # Returns
+	/// 
+	/// A reference to the computed column widths, which is a `Vec<usize>` where each entry corresponds
+	/// to the width of the respective column.
+	///
+	/// # Panics
+	///
+	/// This method may panic if the internal column count is inconsistent with the lengths of
+	/// `header_column_widths` or `data_column_widths`.
+	///
+	/// # Example
+	///
+	/// ```rust
+	/// let column_widths = table.column_widths();
+	/// // column_widths now contains the calculated widths for each column.
+	/// ```
+	///
+	/// # Notes
+	///
+	/// - The method assumes that `self.column_count()`, `self.headers()`, and `self.data()`
+	///   are properly populated before determining column widths.
+	/// - The column widths are only recalculated if they have not been cached previously.
+	pub fn column_widths(&mut self) -> &Vec<usize> {
+		// Return cached column widths if they are already computed
+		if let Some(ref column_widths) = self.column_widths {
+			return column_widths;
+		}
+
+		// Initialize column_widths as a vector of zeroes with the length equal to column_count
+		let mut column_widths = vec![0; self.column_count()];
+
+		// Ensure that headers and data are populated
+		let _headers = self.headers(); // populate self.headers and self.header_column_widths
+		let _data = self.data(); // populate self.data, self.numeric_columns, and self.data_column_widths
+
+		// Unwrap header_column_widths and data_column_widths
+		let header_column_widths = self.header_column_widths().clone();
+		let data_column_widths = self.data_column_widths().clone();
+
+		// Determine the column widths based on the format_text option
+		match self.text_format {
+			TextFormat::Truncate | TextFormat::NoFormat => {
+				// If Truncate or NoFormat, set column_widths to the max of header and data widths
+				for i in 0..column_widths.len() {
+					column_widths[i] = header_column_widths[i].max(data_column_widths[i]);
+				}
+			}
+			TextFormat::Wrap => {
+				// If Wrap, use data_column_widths
+				column_widths.copy_from_slice(&data_column_widths);
+			}
+		}
+
+		// Cache the computed column widths in self.column_widths
+		self.column_widths = Some(column_widths);
+
+		// Return the cached column widths
+		self.column_widths.as_ref().unwrap()
+	}
 
 }
