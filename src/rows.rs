@@ -20,7 +20,7 @@ impl TableBuilder {
 
 	}
 
-    pub fn column_width_limits(&mut self) -> &Vec<usize> {
+	pub fn column_width_limits(&mut self) -> &Vec<usize> {
 
 		if let Some(ref column_width_limits) = self.column_width_limits {
 			return column_width_limits;
@@ -42,9 +42,9 @@ impl TableBuilder {
 
 		self.column_width_limits.as_ref().unwrap()
 
-    }
+	}
 
-    pub fn header_column_widths(&mut self) -> &Vec<usize> {
+	pub fn header_column_widths(&mut self) -> &Vec<usize> {
 
 		if let Some(ref header_column_widths) = self.header_column_widths {
 			return header_column_widths;
@@ -54,7 +54,7 @@ impl TableBuilder {
 
 		self.header_column_widths.as_ref().unwrap()
 
-    }
+	}
 
 	pub fn data_column_widths(&mut self) -> &Vec<usize> {
 		// If widths are already calculated, return a reference to them
@@ -69,7 +69,7 @@ impl TableBuilder {
 		self.data_column_widths.as_ref().unwrap()
 	}
 
-    pub fn numeric_columns(&mut self) -> &Vec<bool> {
+	pub fn numeric_columns(&mut self) -> &Vec<bool> {
 
 		if let Some(ref numeric_columns) = self.numeric_columns {
 			return numeric_columns;
@@ -79,7 +79,7 @@ impl TableBuilder {
 
 		self.numeric_columns.as_ref().unwrap()
 
-    }
+	}
 
 	pub fn clear_headers(&mut self) -> &mut Self {
 		self.headers = None;
@@ -198,8 +198,5 @@ impl TableBuilder {
 		// Return a reference to the processed data
 		self.data.as_ref().unwrap()
 	}
-
-
-
 
 }
