@@ -14,7 +14,19 @@ pub struct TableBuilder {
 	ofs:                    String, // Output Field Separator
 	header_index:            usize, // Which row is the header or 0 for no header
 	header_count:            usize, // Which row is the header or 0 for no header
-	max_column_widths_index: usize, // A row containing max widths of each column or 0 not to bother
+
+    /// The row in the data that specifies column widths.
+    ///
+    /// This specifies which row contains the column widths. The width values in this
+    /// row can override the global width settings.
+    column_width_limits_index: usize,
+
+    /// Column width limits specified in the data row.
+    ///
+    /// This contains the column widths as specified in a special row in the data. These widths
+    /// are clamped by global maximum column width col_width_max.
+    column_width_limits: Option<Vec<usize>>,
+
 	no_divider:               bool, // Whether to include a divider line ----
 	divider_char:             char, // Divider Character ----, ====, ####
 	max_cell_width:          usize, // Maximum width of a cell
@@ -27,10 +39,31 @@ pub struct TableBuilder {
 	alignment:       TextAlignment, // Do we align numeric columns to the right
 	table:                   Table, // prettytable instance
 	max_column_widths: Vec<String>, // maximum width for each column
-	column_widths:     Vec<String>, // calculated width of each column
-	headers:      Vec<Vec<String>>, // header rows
+
+    /// Column widths specified in the data row.
+    ///
+    /// These are final column widths for each column, taking the maximum width for all rows in the column
+    /// then limiting it by col_width_limits
+    header_column_widths: Option<Vec<usize>>,
+
+    /// Column widths specified in the data row.
+    ///
+    /// These are final column widths for each column, taking the maximum width for all rows in the column
+    /// then limiting it by col_width_limits
+    data_column_widths: Option<Vec<usize>>,
+
+    /// The header rows cached from the input data.
+    ///
+    /// extracted from the input, by considering, header_index and header_count
+    /// this will store the header rows.
+    headers: Option<Vec<Vec<String>>>,
 	data:         Vec<Vec<String>>, // data rows
-	numeric_columns:     Vec<bool>, // which columns are determined to hold numeric data
+
+    /// Cached status indicating whether each column is numeric.
+    ///
+    /// This indicates whether each column in the data is numeric (`true`) or text (`false`).
+    /// This helps in formatting and alignment.
+    pub numeric_columns: Option<Vec<bool>>,
 	column_count:    Option<usize>, // number of columns after parsing data
 }
 
@@ -56,7 +89,8 @@ impl TableBuilder  {
 			ofs:              " ".to_string(), // Default output field separator
 			header_index:                   1, // Default header at row 1
 			header_count:                   1, // Default 1 header row
-			max_column_widths_index:        0, // Default no max_column_widths_row
+            column_width_limits_index:      0, // Default: no column width row
+            column_width_limits:         None, // Default: no column width limits
 			no_divider:                 false, // Default add a divider between header & data
 			divider_char:                 '-', // Default divider mad of -
 			max_cell_width:                80, // Default maximum cell width
@@ -68,13 +102,18 @@ impl TableBuilder  {
 			thousand_separator:           ',', // Default thousand seperator char ,
 			alignment:    TextAlignment::Auto, // Default align numeric columns to the right
 			max_column_widths:     Vec::new(), // unclaculated maximum column widths
-			column_widths:         Vec::new(), // uncalculated column widths
-			headers:               Vec::new(), // unextracted header rows
+			header_column_widths:        None, // uncalculated column widths
+			data_column_widths:          None, // uncalculated column widths
+			headers:                     None, // unextracted header rows
 			data:                  Vec::new(), // unextracted data rows
-			numeric_columns:       Vec::new(), // uncalculated numeric columns
+			numeric_columns:             None, // uncalculated numeric columns
 			column_count:                None, // uncalculated column count
 		}
 	}
+}
+
+#[allow(dead_code)]
+impl TableBuilder  {
 
 	pub fn set_ifs(&mut self, ifs: String) -> &mut Self {
 		self.ifs = ifs;
@@ -112,10 +151,16 @@ impl TableBuilder  {
 		self
 	}
 
-	pub fn set_max_column_widths_index(&mut self, index: usize) -> &mut Self {
-		self.max_column_widths_index = index;
+	/// Sets the index of the row in data that specifies column widths.
+	///
+	/// # Arguments
+	///
+	/// * `index` - The index of the row that provides the maximum width for each column.
+	pub fn set_column_width_limits_index(&mut self, index: usize) -> &mut Self {
+		self.column_width_limits_index = index;
 		self
 	}
+
 
 	pub fn set_no_divider(&mut self, no_divider: bool) -> &mut Self {
 		self.no_divider = no_divider;

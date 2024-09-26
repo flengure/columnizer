@@ -69,11 +69,11 @@ impl CellFormatter {
 	/// # Returns
 	///
 	/// A new `CellFormatter` with default values for formatting options.
-	pub fn new(input: String, width: usize) -> Self {
+	pub fn new(input: String) -> Self {
 		let trimmed_input = trim_and_strip_blanks(&input);
 		Self {
 			input_text: input,
-			width,
+			width:                             48,
 			formatted_text: trimmed_input.clone(),
 			text_format:     TextFormat::Truncate,
 			alignment:        TextAlignment::Auto,
