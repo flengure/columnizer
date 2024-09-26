@@ -23,10 +23,12 @@ pub enum TextAlignment {
 	NoAlignment,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct CellFormatter {
     /// The input string to be formatted.
+	#[allow(dead_code)]
     pub input_text: String,
+	#[allow(dead_code)]
     pub formatted_text: String,
     /// The width of the field to be formatted.
     pub width: usize,
@@ -55,6 +57,7 @@ pub struct CellFormatter {
     pub alignment: TextAlignment,
 
     /// A flag indicating whether the content is numeric.
+	#[allow(dead_code)]
     pub is_numeric: Option<bool>,
 }
 
@@ -72,7 +75,7 @@ impl CellFormatter {
 	pub fn new(input: String) -> Self {
 		let trimmed_input = trim_and_strip_blanks(&input);
 		Self {
-			input_text: input,
+			input_text:                     input,
 			width:                             48,
 			formatted_text: trimmed_input.clone(),
 			text_format:     TextFormat::Truncate,
@@ -88,7 +91,7 @@ impl CellFormatter {
 	}
 }
 
-#[allow(dead_code)]
+//#[allow(dead_code)]
 impl CellFormatter {
     pub fn set_width(&mut self, width: usize) -> &mut Self {
         self.width = width;
@@ -164,6 +167,7 @@ impl CellFormatter {
     }
 }
 
+#[allow(dead_code)]
 impl CellFormatter {
 
     // Method to wrap or truncate text based on the `truncate` flag

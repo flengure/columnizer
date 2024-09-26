@@ -1,7 +1,9 @@
+mod builder;
 mod cell;
+mod rows;
 mod table;
 mod text;
-pub use table::TableBuilder;
+pub use builder::TableBuilder;
 
 impl TableBuilder {
 
