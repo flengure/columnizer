@@ -1,4 +1,5 @@
 use prettytable::Table;
+use crate::cell::{ CellFormatter, TextAlignment, TextFormat };
 
 /// Builder for configuring and formatting text into columns.
 ///
@@ -15,13 +16,13 @@ pub struct TableBuilder<'a> {
 	no_divider:               bool, // Whether to include a divider line ----
 	divider_char:             char, // Divider Character ----, ====, ####
 	max_cell_width:          usize, // Maximum width of a cell
-	truncate:                 bool, // truncate or wrap text to width of cell
+	text_format:        TextFormat, // truncate or wrap text to width of cell
 	pad_decimal_digits:       bool, // Do we align the decimals padding with 0 at the end if necessary
 	max_decimal_digits:      usize, // Limit the number of decimal places
 	decimal_separator:        char, // Character to display decimals 0.0, 0,0
 	use_thousand_separator:   bool, // Do we add thousands separator in output
 	thousand_separator:       char, // Separator for thousands, 0,000, 0.000
-	align:                    bool, // Do we align numeric columns to the right
+	alignment:       TextAlignment, // Do we align numeric columns to the right
 	table:                   Table, // prettytable instance
 	max_column_widths: Vec<String>, // maximum width for each column
 	column_widths:     Vec<String>, // calculated width of each column
@@ -37,28 +38,28 @@ impl<'a> TableBuilder<'a> {
 	pub fn new(input: &'a str) -> Self {
 		Self {
 			input,
-			ifs:                      " ", // Default input field separator
-			ofs:                      " ", // Default output field separator
-			header_index:               1, // Default header at row 1
-			header_count:               1, // Default 1 header row
-			max_column_widths_index:    0, // Default no max_column_widths_row
-			no_divider:             false, // Default add a divider between header & data
-			divider_char:             '-', // Default divider mad of -
-			max_cell_width:            80, // Default maximum cell width
-			truncate:                true, // Default truncate text
-			pad_decimal_digits:     false, // Default dont pad decimal digits
-			max_decimal_digits:         2, // Default maximum decimal digits
-			decimal_separator:        '.', // Default decimal separator
-			use_thousand_separator: false, // Default don't add thousand separator
-			thousand_separator:       ',', // Default thousand seperator char ,
-			align:                   true, // Default align numeric columns to the right
-			table:           Table::new(), // New prettytable
-			max_column_widths: Vec::new(), // unclaculated maximum column widths
-			column_widths:     Vec::new(), // uncalculated column widths
-			headers:           Vec::new(), // unextracted header rows
-			data:              Vec::new(), // unextracted data rows
-			numeric_columns:   Vec::new(), // uncalculated numeric columns
-			column_count:               0, // uncalculated column count
+			ifs:                          " ", // Default input field separator
+			ofs:                          " ", // Default output field separator
+			header_index:                   1, // Default header at row 1
+			header_count:                   1, // Default 1 header row
+			max_column_widths_index:        0, // Default no max_column_widths_row
+			no_divider:                 false, // Default add a divider between header & data
+			divider_char:                 '-', // Default divider mad of -
+			max_cell_width:                80, // Default maximum cell width
+			text_format: TextFormat::Truncate, // Default truncate text
+			pad_decimal_digits:         false, // Default dont pad decimal digits
+			max_decimal_digits:             2, // Default maximum decimal digits
+			decimal_separator:            '.', // Default decimal separator
+			use_thousand_separator:     false, // Default don't add thousand separator
+			thousand_separator:           ',', // Default thousand seperator char ,
+			alignment:    TextAlignment::Auto, // Default align numeric columns to the right
+			table:               Table::new(), // New prettytable
+			max_column_widths:     Vec::new(), // unclaculated maximum column widths
+			column_widths:         Vec::new(), // uncalculated column widths
+			headers:               Vec::new(), // unextracted header rows
+			data:                  Vec::new(), // unextracted data rows
+			numeric_columns:       Vec::new(), // uncalculated numeric columns
+			column_count:                   0, // uncalculated column count
 		}
 	}
 
@@ -72,8 +73,16 @@ impl<'a> TableBuilder<'a> {
 		self
 	}
 
-	pub fn set_header_index(&mut self, index: usize) -> &mut Self {
-		self.header_index = index;
+    /// Sets the index of the header row in the input data.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The index of the row in the data to be treated as the header row.
+    pub fn set_header_index(&mut self, index: usize) -> &mut Self {
+		self.header_index = std::cmp::max(0, index);
+		if self.header_index > 0 {
+			self.header_count = std::cmp::max(self.header_count, 1);
+		}
 		self
 	}
 
@@ -102,8 +111,8 @@ impl<'a> TableBuilder<'a> {
 		self
 	}
 
-	pub fn set_truncate(&mut self, truncate: bool) -> &mut Self {
-		self.truncate = truncate;
+	pub fn set_text_format(&mut self, text_format: TextFormat) -> &mut Self {
+		self.text_format = text_format;
 		self
 	}
 
@@ -132,8 +141,8 @@ impl<'a> TableBuilder<'a> {
 		self
 	}
 
-	pub fn set_align(&mut self, align: bool) -> &mut Self {
-		self.align = align;
+	pub fn set_alignment(&mut self, alignment: TextAlignment) -> &mut Self {
+		self.alignment = alignment;
 		self
 	}
 

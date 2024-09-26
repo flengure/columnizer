@@ -30,7 +30,6 @@ fn truncate_string(text: &str, max_text_width: usize) -> String {
         return trimmed_text.to_string();
     }
 
-
     let mut width = 0;
     let mut chars = trimmed_text.chars();
     let mut truncated = String::new();
