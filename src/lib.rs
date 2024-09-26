@@ -3,6 +3,6 @@ mod table;
 mod text;
 pub use table::TableBuilder;
 
-impl<'a> TableBuilder<'a> {
+impl TableBuilder {
 
 }

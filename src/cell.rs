@@ -1,4 +1,4 @@
-use crate::text;
+use crate::text::trim_and_strip_blanks;
 use std::num::ParseFloatError;
 use textwrap;
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
@@ -70,7 +70,7 @@ impl CellFormatter {
 	///
 	/// A new `CellFormatter` with default values for formatting options.
 	pub fn new(input: String, width: usize) -> Self {
-		let trimmed_input = text::trim_and_strip_blanks(&input);
+		let trimmed_input = trim_and_strip_blanks(&input);
 		Self {
 			input_text: input,
 			width,

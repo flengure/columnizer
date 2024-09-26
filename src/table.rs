@@ -1,15 +1,17 @@
-use prettytable::Table;
 use crate::cell::{ CellFormatter, TextAlignment, TextFormat };
+use crate::text::trim_and_strip_blanks;
+use prettytable::format;
+use prettytable::Table;
 
 /// Builder for configuring and formatting text into columns.
 ///
 /// This struct allows setting various options to control the formatting of text into columns,
 /// including field separators, header rows, divider lines, and text width.
 #[allow(dead_code)]
-pub struct TableBuilder<'a> {
-	input:                 &'a str, // The text to be formatted
-	ifs:                   &'a str, // Input Field Separator
-	ofs:                   &'a str, // Output Field Separator
+pub struct TableBuilder {
+	input:                  String, // The text to be formatted
+	ifs:                    String, // Input Field Separator
+	ofs:                    String, // Output Field Separator
 	header_index:            usize, // Which row is the header or 0 for no header
 	header_count:            usize, // Which row is the header or 0 for no header
 	max_column_widths_index: usize, // A row containing max widths of each column or 0 not to bother
@@ -29,17 +31,29 @@ pub struct TableBuilder<'a> {
 	headers:      Vec<Vec<String>>, // header rows
 	data:         Vec<Vec<String>>, // data rows
 	numeric_columns:     Vec<bool>, // which columns are determined to hold numeric data
-	column_count:            usize, // number of columns after parsing data
+	column_count:    Option<usize>, // number of columns after parsing data
 }
 
 #[allow(dead_code)]
-impl<'a> TableBuilder<'a> {
+impl TableBuilder  {
 	/// Creates a new `Builder` with default settings.
-	pub fn new(input: &'a str) -> Self {
+	pub fn new(input: String) -> Self {
+
+		let trimmed_input = trim_and_strip_blanks(&input);
+
+		let mut table = Table::new();
+		table.set_format(format::FormatBuilder::new()
+			.padding(0, 0) // 0 spaces horizontal and vertical
+			.separator(format::LinePosition::Top,    format::LineSeparator::new(' ', ' ', ' ', ' ')) // No top    border
+			.separator(format::LinePosition::Title,  format::LineSeparator::new(' ', ' ', ' ', ' ')) // No title  border
+			.separator(format::LinePosition::Bottom, format::LineSeparator::new(' ', ' ', ' ', ' ')) // No bottom border
+			.build());
+
 		Self {
-			input,
-			ifs:                          " ", // Default input field separator
-			ofs:                          " ", // Default output field separator
+			table,
+			input:      trimmed_input.clone(),
+			ifs:              " ".to_string(), // Default input field separator
+			ofs:              " ".to_string(), // Default output field separator
 			header_index:                   1, // Default header at row 1
 			header_count:                   1, // Default 1 header row
 			max_column_widths_index:        0, // Default no max_column_widths_row
@@ -53,32 +67,31 @@ impl<'a> TableBuilder<'a> {
 			use_thousand_separator:     false, // Default don't add thousand separator
 			thousand_separator:           ',', // Default thousand seperator char ,
 			alignment:    TextAlignment::Auto, // Default align numeric columns to the right
-			table:               Table::new(), // New prettytable
 			max_column_widths:     Vec::new(), // unclaculated maximum column widths
 			column_widths:         Vec::new(), // uncalculated column widths
 			headers:               Vec::new(), // unextracted header rows
 			data:                  Vec::new(), // unextracted data rows
 			numeric_columns:       Vec::new(), // uncalculated numeric columns
-			column_count:                   0, // uncalculated column count
+			column_count:                None, // uncalculated column count
 		}
 	}
 
-	pub fn set_ifs(&mut self, ifs: &'a str) -> &mut Self {
+	pub fn set_ifs(&mut self, ifs: String) -> &mut Self {
 		self.ifs = ifs;
 		self
 	}
 
-	pub fn set_ofs(&mut self, ofs: &'a str) -> &mut Self {
+	pub fn set_ofs(&mut self, ofs: String) -> &mut Self {
 		self.ofs = ofs;
 		self
 	}
 
-    /// Sets the index of the header row in the input data.
-    ///
-    /// # Arguments
-    ///
-    /// * `index` - The index of the row in the data to be treated as the header row.
-    pub fn set_header_index(&mut self, index: usize) -> &mut Self {
+	/// Sets the index of the header row in the input data.
+	///
+	/// # Arguments
+	///
+	/// * `index` - The index of the row in the data to be treated as the header row.
+	pub fn set_header_index(&mut self, index: usize) -> &mut Self {
 		self.header_index = std::cmp::max(0, index);
 		if self.header_index > 0 {
 			self.header_count = std::cmp::max(self.header_count, 1);
@@ -86,8 +99,16 @@ impl<'a> TableBuilder<'a> {
 		self
 	}
 
+	/// Sets the number of header rows to process.
+	///
+	/// # Arguments
+	///
+	/// * `count` - The number of rows at the top of the data to treat as header rows.
+	#[allow(dead_code)]
 	pub fn set_header_count(&mut self, count: usize) -> &mut Self {
-		self.header_count = count;
+		if self.header_index > 0 {
+			self.header_count = std::cmp::max(count, 1);
+		}
 		self
 	}
 
