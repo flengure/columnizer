@@ -2,7 +2,7 @@ pub use crate::rows::{
 	CellFormatter,
 	TableBuilder,
 	Alignment,
-	Frame,
+//	Frame,
 };
 pub use prettytable::Cell;
 pub use prettytable::format;
@@ -46,20 +46,18 @@ impl TableBuilder {
 						(format::Alignment::LEFT, Alignment::LEFT)
 					};
 
-					let formatter = CellFormatter::new(header_cell.to_string())
+					let mut formatter = CellFormatter::new(header_cell)
 						.set_width(column_widths[i])
 						.set_alignment(alignment)
 						.set_frame(self.frame)
-						.set_ellipsis(self.ellipsis)
-						.format()
+						.set_no_ellipsis(self.no_ellipsis)
 						.clone();
-
 
 					// Prepend self.ofs to the cell, except for the first cell
 					let cell_content = if i > 0 {
-						format!("{}{}", self.ofs, formatter.formatted_text)
+						format!("{}{}", self.ofs, formatter.formatted())
 					} else {
-						formatter.formatted_text
+						formatter.formatted()
 					};
 
 					let formatted_cell = Cell::new_align(&cell_content, pt_alignment);
@@ -113,24 +111,23 @@ impl TableBuilder {
 						(format::Alignment::LEFT, Alignment::LEFT)
 					};
 
-					let formatter = CellFormatter::new(data_cell.to_string())
+					let mut formatter = CellFormatter::new(data_cell)
 						.set_width(column_widths[i])
 						.set_alignment(alignment)
 						.set_frame(self.frame)
-						.set_ellipsis(self.ellipsis)
+						.set_no_ellipsis(self.no_ellipsis)
 						.set_pad_decimal_digits(self.pad_decimal_digits)
 						.set_max_decimal_digits(self.max_decimal_digits)
 						.set_decimal_separator(self.decimal_separator)
 						.set_use_thousand_separator(self.use_thousand_separator)
 						.set_thousand_separator(self.thousand_separator)
-						.format()
 						.clone();
 
 					// Prepend self.ofs to the cell, except for the first cell
 					let cell_content = if i > 0 {
-						format!("{}{}", self.ofs, formatter.formatted_text)
+						format!("{}{}", self.ofs, formatter.formatted())
 					} else {
-						formatter.formatted_text
+						formatter.formatted()
 					};
 
 					let formatted_cell = Cell::new_align(&cell_content, pt_alignment);

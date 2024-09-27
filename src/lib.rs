@@ -1,5 +1,5 @@
 mod builder;
-mod cell;
+mod format;
+mod formatter;
 mod rows;
 mod table;
-mod text;

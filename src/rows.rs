@@ -1,4 +1,6 @@
-pub use crate::cell::{ Formatter as CellFormatter, Alignment, Frame };
+pub use crate::formatter::{ Formatter as CellFormatter, Alignment, Frame };
+use unicode_width::UnicodeWidthChar;
+use unicode_width::UnicodeWidthStr;
 pub use crate::builder::TableBuilder;
 
 impl TableBuilder {
@@ -172,6 +174,7 @@ impl TableBuilder {
 	/// # Returns
 	/// 
 	/// * A mutable reference to the current instance of `Self`, allowing for method chaining.
+	#[allow(dead_code)]
 	pub fn clear_headers(&mut self) -> &mut Self {
 		self.headers = None; // Clear the cached headers
 		self
@@ -296,7 +299,7 @@ impl TableBuilder {
 				for (j, cell) in row.iter_mut().enumerate() {
 					let cell_value = cell.clone();
 			   
-						let mut formatter = CellFormatter::new(cell_value)
+						let mut formatter = CellFormatter::new(&cell_value)
 							.set_frame(Frame::NONE)
 							.set_alignment(Alignment::LEFT)
 							.set_decimal_separator(self.decimal_separator)
@@ -304,14 +307,15 @@ impl TableBuilder {
 							.set_max_decimal_digits(self.max_decimal_digits)
 							.set_thousand_separator(self.thousand_separator)
 							.set_use_thousand_separator(self.use_thousand_separator)
-							.format()
 							.clone();
 
+						let formatted = formatter.formatted();
+
 						// Update column width for this cell
-						let width = formatter.trimmed_width();
+						let width = &formatted.trim().width();
 						if j < column_widths.len() {
 							column_widths[j] = column_widths[j]
-								.max(width)
+								.max(*width)
 								.min(column_width_limits.get(j).copied().unwrap_or(usize::MAX));
 						}
 
@@ -321,7 +325,7 @@ impl TableBuilder {
 						}
 
 						// Replace the original cell with the formatted one
-						*cell = formatter.formatted_text;
+						*cell = formatted;
 					}
 					Some(row) // Include this row in the result
 				}

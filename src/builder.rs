@@ -1,6 +1,5 @@
-use crate::cell::{ Alignment, Frame };
-use crate::text::clean;
-use prettytable::format;
+use crate::formatter::{ Alignment, Frame };
+use crate::format::clean;
 use prettytable::Table;
 
 /// Builder for configuring and formatting text into columns.
@@ -70,7 +69,7 @@ pub struct TableBuilder {
     ///
     /// If `true`, an ellipsis (`...`) will be added to the end of truncated text.
     /// If `false`, text will be cut off without ellipsis.
-    pub ellipsis: bool,
+    pub no_ellipsis: bool,
 
 	pub pad_decimal_digits:       bool, // Do we align the decimals padding with 0 at the end if necessary
 	pub max_decimal_digits:      usize, // Limit the number of decimal places
@@ -155,7 +154,7 @@ impl TableBuilder  {
 			divider_char:                 '-', // Default divider mad of -
 			max_cell_width:                80, // Default maximum cell width
 			frame:            Frame::TRUNCATE, // Default truncate text
-			ellipsis:                   false, // Default no ellipsis on truncate
+			no_ellipsis:                false, // Default no ellipsis on truncate
 			pad_decimal_digits:         false, // Default dont pad decimal digits
 			max_decimal_digits:             2, // Default maximum decimal digits
 			decimal_separator:            '.', // Default decimal separator
@@ -245,8 +244,8 @@ impl TableBuilder  {
 		self
 	}
 
-	pub fn set_ellipsis(&mut self, ellipsis: bool) -> &mut Self {
-		self.ellipsis = ellipsis;
+	pub fn set_no_ellipsis(&mut self, no_ellipsis: bool) -> &mut Self {
+		self.no_ellipsis = no_ellipsis;
 		self
 	}
 
