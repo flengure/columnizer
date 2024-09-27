@@ -1,68 +1,135 @@
-use crate::text::trim_and_strip_blanks;
+use crate::text::clean;
+use std::fmt;
 use std::num::ParseFloatError;
+use std::str::FromStr;
 use textwrap;
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum TextFormat {
+pub enum Frame {
 	/// Shorten the text to fit the width
-	Truncate,
+	TRUNCATE,
 	/// Wrap the text to fit the width
-	Wrap,
+	WRAP,
 	/// Leave the text unchanged
-	NoFormat,
+	NONE,
+}
+
+impl FromStr for Frame {
+	type Err = String;
+
+	fn from_str(input: &str) -> Result<Frame, Self::Err> {
+		match input.to_uppercase().as_str() {
+			"TRUNCATE" => Ok(Frame::TRUNCATE),
+			"WRAP" => Ok(Frame::WRAP),
+			"NONE" => Ok(Frame::NONE),
+			_ => Err(format!("Invalid frame type: {}", input)),
+		}
+	}
+}
+
+impl fmt::Display for Frame {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		match self {
+			Frame::TRUNCATE => write!(f, "TRUNCATE"),
+			Frame::WRAP => write!(f, "WRAP"),
+			Frame::NONE => write!(f, "NONE"),
+		}
+	}
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum TextAlignment {
+pub enum Alignment {
 	/// Align to the right if numeric
-	Auto,
-	/// Align to the right, text or numeric
-	Right,
-	/// No alignment
-	NoAlignment,
+	AUTO,
+	CENTER,
+	LEFT,
+	RIGHT,
+}
+
+impl FromStr for Alignment {
+	type Err = String;
+
+	fn from_str(input: &str) -> Result<Alignment, Self::Err> {
+		match input.to_uppercase().as_str() {
+			"AUTO" => Ok(Alignment::AUTO),
+			"CENTER" => Ok(Alignment::CENTER),
+			"LEFT" => Ok(Alignment::LEFT),
+			"RIGHT" => Ok(Alignment::RIGHT),
+			_ => Err(format!("Invalid frame type: {}", input)),
+		}
+	}
+}
+
+impl fmt::Display for Alignment {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		match self {
+			Alignment::AUTO => write!(f, "AUTO"),
+			Alignment::CENTER => write!(f, "CENTER"),
+			Alignment::LEFT => write!(f, "LEFT"),
+			Alignment::RIGHT => write!(f, "RIGHT"),
+		}
+	}
 }
 
 #[derive(Clone)]
-pub struct CellFormatter {
-    /// The input string to be formatted.
+pub struct Formatter {
+	/// The raw input string that will be formatted according to the specified options.
 	#[allow(dead_code)]
-    pub input_text: String,
+	pub input_text: String,
+
+	/// The resulting formatted string after applying the specified formatting rules.
 	#[allow(dead_code)]
-    pub formatted_text: String,
-    /// The width of the field to be formatted.
-    pub width: usize,
+	pub formatted_text: String,
 
-    /// Whether to truncate the text within the field width.
-    /// If false, text will be wrapped to fit within the field width.
-    pub text_format: TextFormat,
-    /// Whether to truncate the text with an ellipsis if it exceeds the width.
-    /// Applies only if `truncate` is true.
-    pub ellipsis: bool,
-    /// Whether to pad decimal digits with trailing zeros if necessary.
-    pub pad_decimal_digits: bool,
-    /// The maximum number of decimal digits to display.
-    pub max_decimal_digits: usize,
-    /// The character to use as the decimal separator.
-    pub decimal_separator: char,
-    /// Whether to use a thousand separator in numeric values.
-    pub use_thousand_separator: bool,
-    /// The character to use as the thousand separator.
-    pub thousand_separator: char,
+	/// The maximum width (in characters) allocated for the formatted field.
+	/// This width determines how the input text will be displayed in the output.
+	pub width: usize,
 
-	/// alignment
-	/// if set to Auto, will align numeric text to the right,
-	/// if set to Right will force alignment to the right text or numeric
-	/// if set to None will leave the text unchanged
-    pub alignment: TextAlignment,
+	/// Specifies the formatting style for the text within the field.
+	/// If set to `Frame::TRUNCATE`, text will be truncated to fit within the field width.
+	/// If set to `Frame::WRAP`, text will be wrapped onto multiple lines if it exceeds the width.
+	pub frame: Frame,
 
-    /// A flag indicating whether the content is numeric.
+	/// Indicates whether to truncate text with an ellipsis ("...") when it exceeds the defined width.
+	/// This is applicable only when `frame` is set to `Frame::TRUNCATE`.
+	pub ellipsis: bool,
+
+	/// Determines whether to pad decimal digits with trailing zeros to maintain a consistent appearance.
+	/// If set to true, decimal numbers will display the specified number of digits after the decimal point.
+	pub pad_decimal_digits: bool,
+
+	/// The maximum number of decimal digits that will be displayed for numeric values.
+	/// This setting helps control the precision of the output for numeric formatting.
+	pub max_decimal_digits: usize,
+
+	/// The character used as the decimal separator in formatted numeric values.
+	/// This is particularly useful for ensuring compatibility with various regional formats.
+	pub decimal_separator: char,
+
+	/// A flag indicating whether to include a thousand separator in large numeric values.
+	/// If set to true, numbers will be formatted with the specified `thousand_separator`.
+	pub use_thousand_separator: bool,
+
+	/// The character used as the thousand separator in formatted numeric values.
+	/// This enhances readability by grouping digits in large numbers.
+	pub thousand_separator: char,
+
+	/// Specifies the alignment of the text within the field.
+	/// - `Alignment::AUTO`: Automatically aligns numeric text to the right.
+	/// - `Alignment::RIGHT`: Forces right alignment for both numeric and non-numeric text.
+	/// - `Alignment::None`: Leaves the text unchanged, preserving its original alignment.
+	pub alignment: Alignment,
+
+	/// A flag indicating whether the content being formatted is numeric.
+	/// This can influence how certain formatting rules are applied, such as decimal padding.
 	#[allow(dead_code)]
-    pub is_numeric: Option<bool>,
+	pub is_numeric: Option<bool>,
+
 }
 
-impl CellFormatter {
-	/// Creates a new `CellFormatter` instance with default settings.
+impl Formatter {
+	/// Creates a new `Formatter` instance with default settings.
 	///
 	/// # Arguments
 	///
@@ -71,82 +138,82 @@ impl CellFormatter {
 	///
 	/// # Returns
 	///
-	/// A new `CellFormatter` with default values for formatting options.
+	/// A new `Formatter` with default values for formatting options.
 	pub fn new(input: String) -> Self {
-		let trimmed_input = trim_and_strip_blanks(&input);
+		let trimmed_input = clean(&input);
 		Self {
-			input_text:                     input,
-			width:                             48,
-			formatted_text: trimmed_input.clone(),
-			text_format:     TextFormat::Truncate,
-			alignment:        TextAlignment::Auto,
-			ellipsis:                        true,
-			pad_decimal_digits:             false,
+			input_text:                     input, // Original input
+			width:                             48, // Default 48
+			formatted_text: trimmed_input.clone(), // Default cleaned input
+			frame:                Frame::TRUNCATE, // Default TRUNCATE
+			alignment:            Alignment::AUTO, // Default text left, numbers right
+			ellipsis:                        true, // Default add an ellipsis to truncated text
+			pad_decimal_digits:             false, // Default dont pad decimal places
 			max_decimal_digits:                 2, // Default to 2 decimal places
 			decimal_separator:                '.', // Default decimal separator
-			use_thousand_separator:         false,
-			thousand_separator:               ',',
-			is_numeric:                      None,
+			use_thousand_separator:         false, // Default no thousands grouping
+			thousand_separator:               ',', // Default `,`
+			is_numeric:                      None, // Unknown
 		}
 	}
 }
 
 //#[allow(dead_code)]
-impl CellFormatter {
-    pub fn set_width(&mut self, width: usize) -> &mut Self {
-        self.width = width;
-        self
-    }
+impl Formatter {
+	pub fn set_width(&mut self, width: usize) -> &mut Self {
+		self.width = width;
+		self
+	}
 
-    pub fn set_text_format(&mut self, text_format: TextFormat) -> &mut Self {
-        self.text_format = text_format;
-        self
-    }
+	pub fn set_frame(&mut self, frame: Frame) -> &mut Self {
+		self.frame = frame;
+		self
+	}
 
-    pub fn set_ellipsis(&mut self, ellipsis: bool) -> &mut Self {
-        self.ellipsis = ellipsis;
-        self
-    }
+	pub fn set_ellipsis(&mut self, ellipsis: bool) -> &mut Self {
+		self.ellipsis = ellipsis;
+		self
+	}
 
-    pub fn set_pad_decimal_digits(&mut self, pad_decimal_digits: bool) -> &mut Self {
-        self.pad_decimal_digits = pad_decimal_digits;
-        self
-    }
+	pub fn set_pad_decimal_digits(&mut self, pad_decimal_digits: bool) -> &mut Self {
+		self.pad_decimal_digits = pad_decimal_digits;
+		self
+	}
 
-    pub fn set_max_decimal_digits(&mut self, max_decimal_digits: usize) -> &mut Self {
-        self.max_decimal_digits = max_decimal_digits;
-        self
-    }
+	pub fn set_max_decimal_digits(&mut self, max_decimal_digits: usize) -> &mut Self {
+		self.max_decimal_digits = max_decimal_digits;
+		self
+	}
 
-    pub fn set_decimal_separator(&mut self, decimal_separator: char) -> &mut Self {
-        self.decimal_separator = decimal_separator;
-        self
-    }
+	pub fn set_decimal_separator(&mut self, decimal_separator: char) -> &mut Self {
+		self.decimal_separator = decimal_separator;
+		self
+	}
 
-    pub fn set_use_thousand_separator(&mut self, use_thousand_separator: bool) -> &mut Self {
-        self.use_thousand_separator = use_thousand_separator;
-        self
-    }
+	pub fn set_use_thousand_separator(&mut self, use_thousand_separator: bool) -> &mut Self {
+		self.use_thousand_separator = use_thousand_separator;
+		self
+	}
 
-    pub fn set_thousand_separator(&mut self, thousand_separator: char) -> &mut Self {
-        self.thousand_separator = thousand_separator;
-        self
-    }
+	pub fn set_thousand_separator(&mut self, thousand_separator: char) -> &mut Self {
+		self.thousand_separator = thousand_separator;
+		self
+	}
 
-    pub fn set_alignment(&mut self, alignment: TextAlignment) -> &mut Self {
-        self.alignment = alignment;
-        self
-    }
+	pub fn set_alignment(&mut self, alignment: Alignment) -> &mut Self {
+		self.alignment = alignment;
+		self
+	}
 }
 
-impl CellFormatter {
+impl Formatter {
 
-    /// Checks if the content is numeric by first checking the cached value.
-    /// If not cached, normalizes the content and checks if it can be parsed as f64.
-    ///
-    /// # Returns
-    ///
-    /// A boolean indicating whether the content is numeric.
+	/// Checks if the content is numeric by first checking the cached value.
+	/// If not cached, normalizes the content and checks if it can be parsed as f64.
+	///
+	/// # Returns
+	///
+	/// A boolean indicating whether the content is numeric.
 	pub fn is_numeric(&mut self) -> bool {
 		if let Some(is_numeric) = self.is_numeric {
 			return is_numeric;
@@ -160,52 +227,52 @@ impl CellFormatter {
 		self.is_numeric.unwrap()
 	}
 
-    // Method to get the width of the formatted text after trimming
-    pub fn trimmed_width(&self) -> usize {
-        // Trim the formatted text and calculate its width
-        self.formatted_text.trim().width()
-    }
+	// Method to get the width of the formatted text after trimming
+	pub fn trimmed_width(&self) -> usize {
+		// Trim the formatted text and calculate its width
+		self.formatted_text.trim().width()
+	}
 }
 
 #[allow(dead_code)]
-impl CellFormatter {
+impl Formatter {
 
-    // Method to wrap or truncate text based on the `truncate` flag
-    pub fn wrap_or_truncate(&mut self) -> &mut Self {
+	// Method to wrap or truncate text based on the `truncate` flag
+	pub fn wrap_or_truncate(&mut self) -> &mut Self {
 		if self.width == 0 {
 			return self;
 		}
-        let text_width = self.formatted_text.width();
-        let formatted_text = if let TextFormat::Truncate = self.text_format {
-            if text_width <= self.width {
-                &self.formatted_text
-            } else {
-                let mut width = 0;
-                let mut truncated = String::new();
-                let ellipsis_len = if self.ellipsis { 3 } else { 0 };
-                let max_width = self.width.saturating_sub(ellipsis_len);
-                for c in self.formatted_text.chars() {
-                    let char_width = c.width().unwrap_or(0);
-                    if width + char_width > max_width {
-                        break;
-                    }
-                    width += char_width;
-                    truncated.push(c);
-                }
-                &if self.ellipsis && self.width > 3 {
-                    format!("{}...", truncated.trim())
-                } else {
-                    truncated.trim().to_string()
-                }
-            }
-        } else if let TextFormat::Wrap = self.text_format {
-            &textwrap::wrap(&self.formatted_text, self.width).join("\n")
-        } else {
-            &self.formatted_text.clone()
-        };
-        self.formatted_text = formatted_text.to_string();
-        self
-    }
+		let text_width = self.formatted_text.width();
+		let formatted_text = if let Frame::TRUNCATE = self.frame {
+			if text_width <= self.width {
+				&self.formatted_text
+			} else {
+				let mut width = 0;
+				let mut truncated = String::new();
+				let ellipsis_len = if self.ellipsis { 3 } else { 0 };
+				let max_width = self.width.saturating_sub(ellipsis_len);
+				for c in self.formatted_text.chars() {
+					let char_width = c.width().unwrap_or(0);
+					if width + char_width > max_width {
+						break;
+					}
+					width += char_width;
+					truncated.push(c);
+				}
+				&if self.ellipsis && self.width > 3 {
+					format!("{}...", truncated.trim())
+				} else {
+					truncated.trim().to_string()
+				}
+			}
+		} else if let Frame::WRAP = self.frame {
+			&textwrap::wrap(&self.formatted_text, self.width).join("\n")
+		} else {
+			&self.formatted_text.clone()
+		};
+		self.formatted_text = formatted_text.to_string();
+		self
+	}
 
 	pub fn format(&mut self) -> &mut Self {
 
@@ -272,10 +339,10 @@ impl CellFormatter {
 		self
 	}
 
-    // Method to align text
+	// Method to align text
 	pub fn align(&mut self) -> &mut Self {
-		if self.alignment == TextAlignment::Right 
-			|| (self.alignment == TextAlignment::Auto && self.is_numeric()) {
+		if self.alignment == Alignment::RIGHT 
+			|| (self.alignment == Alignment::AUTO && self.is_numeric()) {
 
 			// Right-align numeric data
 			self.formatted_text = format!("{:>width$}", self.formatted_text, width = self.width);

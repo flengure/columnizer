@@ -1,5 +1,5 @@
-use crate::cell::{ TextAlignment, TextFormat };
-use crate::text::trim_and_strip_blanks;
+use crate::cell::{ Alignment, Frame };
+use crate::text::clean;
 use prettytable::format;
 use prettytable::Table;
 
@@ -8,6 +8,7 @@ use prettytable::Table;
 /// This struct allows setting various options to control the formatting of text into columns,
 /// including field separators, header rows, divider lines, and text width.
 #[allow(dead_code)]
+#[derive(Clone)]
 pub struct TableBuilder {
 
 	/// The text input to be formatted.
@@ -62,8 +63,8 @@ pub struct TableBuilder {
 
     /// Whether to wrap text or truncate it, leave it alone.
     ///
-	/// Enum TextFormat::{Truncate, Wrap, NoFormat}
-	pub text_format: TextFormat,
+	/// Enum Frame::{TRUNCATE, WRAP, NONE}
+	pub frame: Frame,
 
     /// Whether to use ellipsis when truncating text.
     ///
@@ -85,13 +86,13 @@ pub struct TableBuilder {
 	/// align right based on wether the content is text or numeric, or
 	/// dont align.
     ///
-	/// Enum TextAlignment::{Auto, Right, NoAlignment}
-	pub alignment: TextAlignment,
+	/// Enum Alignment::{AUTO, RIGHT, LEFT}
+	pub alignment: Alignment,
 
 	/// These field are computed and cached f
     /// An instance of `Table` from the `prettytable` crate.
 	/// to collect and apply final formatting
-	pub table: Table,
+	pub table: Option<Table>,
 
 	/// Column width limits specified in the data row.
 	///
@@ -141,19 +142,10 @@ impl TableBuilder  {
 	/// Creates a new `Builder` with default settings.
 	pub fn new(input: String) -> Self {
 
-		let trimmed_input = trim_and_strip_blanks(&input);
-
-		let mut table = Table::new();
-		table.set_format(format::FormatBuilder::new()
-			.padding(0, 0) // 0 spaces horizontal and vertical
-			.separator(format::LinePosition::Top,    format::LineSeparator::new(' ', ' ', ' ', ' ')) // No top    border
-			.separator(format::LinePosition::Title,  format::LineSeparator::new(' ', ' ', ' ', ' ')) // No title  border
-			.separator(format::LinePosition::Bottom, format::LineSeparator::new(' ', ' ', ' ', ' ')) // No bottom border
-			.build());
+		let trimmed_input = clean(&input);
 
 		Self {
-			table,
-			input:      trimmed_input.clone(),
+			input:      trimmed_input.clone(), // Sanitized input trim_and_strip_blank_lines
 			ifs:              " ".to_string(), // Default input field separator
 			ofs:              " ".to_string(), // Default output field separator
 			header_index:                   1, // Default header at row 1
@@ -162,14 +154,15 @@ impl TableBuilder  {
 			no_divider:                 false, // Default add a divider between header & data
 			divider_char:                 '-', // Default divider mad of -
 			max_cell_width:                80, // Default maximum cell width
-			text_format: TextFormat::Truncate, // Default truncate text
+			frame:            Frame::TRUNCATE, // Default truncate text
 			ellipsis:                   false, // Default no ellipsis on truncate
 			pad_decimal_digits:         false, // Default dont pad decimal digits
 			max_decimal_digits:             2, // Default maximum decimal digits
 			decimal_separator:            '.', // Default decimal separator
 			use_thousand_separator:     false, // Default don't add thousand separator
 			thousand_separator:           ',', // Default thousand seperator char ,
-			alignment:    TextAlignment::Auto, // Default align numeric columns to the right
+			alignment:        Alignment::AUTO, // Default align numeric columns to the right
+			table:                       None, // Unknown prettytable
             column_width_limits:         None, // Unknown column width limits
 			header_column_widths:        None, // Unknown header column widths
 			data_column_widths:          None, // Unknown data column widths
@@ -247,8 +240,13 @@ impl TableBuilder  {
 		self
 	}
 
-	pub fn set_text_format(&mut self, text_format: TextFormat) -> &mut Self {
-		self.text_format = text_format;
+	pub fn set_frame(&mut self, frame: Frame) -> &mut Self {
+		self.frame = frame;
+		self
+	}
+
+	pub fn set_ellipsis(&mut self, ellipsis: bool) -> &mut Self {
+		self.ellipsis = ellipsis;
 		self
 	}
 
@@ -267,7 +265,7 @@ impl TableBuilder  {
 		self
 	}
 
-	pub fn set_use_thousand_separator(mut self, use_thousand_separator: bool) -> Self {
+	pub fn set_use_thousand_separator(&mut self, use_thousand_separator: bool) -> &mut Self {
 		self.use_thousand_separator = use_thousand_separator;
 		self
 	}
@@ -277,7 +275,7 @@ impl TableBuilder  {
 		self
 	}
 
-	pub fn set_alignment(&mut self, alignment: TextAlignment) -> &mut Self {
+	pub fn set_alignment(&mut self, alignment: Alignment) -> &mut Self {
 		self.alignment = alignment;
 		self
 	}

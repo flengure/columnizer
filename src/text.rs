@@ -7,7 +7,7 @@
 /// # Returns
 ///
 /// A `String` with blank lines removed and trimmed content.
-pub fn trim_and_strip_blanks(input: &str) -> String {
+pub fn clean(input: &str) -> String {
 	input
 		.lines()                                 // Split input into lines
 		.filter(|line| !line.trim().is_empty())  // Remove empty lines

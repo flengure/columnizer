@@ -1,4 +1,4 @@
-pub use crate::cell::{ CellFormatter, TextAlignment, TextFormat };
+pub use crate::cell::{ Formatter as CellFormatter, Alignment, Frame };
 pub use crate::builder::TableBuilder;
 
 impl TableBuilder {
@@ -297,8 +297,8 @@ impl TableBuilder {
 					let cell_value = cell.clone();
 			   
 						let mut formatter = CellFormatter::new(cell_value)
-							.set_text_format(TextFormat::NoFormat)
-							.set_alignment(TextAlignment::NoAlignment)
+							.set_frame(Frame::NONE)
+							.set_alignment(Alignment::LEFT)
 							.set_decimal_separator(self.decimal_separator)
 							.set_pad_decimal_digits(self.pad_decimal_digits)
 							.set_max_decimal_digits(self.max_decimal_digits)
@@ -340,10 +340,10 @@ impl TableBuilder {
 	///
 	/// This method determines the optimal column widths based on the provided text format:
 	///
-	/// - If the `TextFormat` is set to `Truncate` or `NoFormat`, the column width for each column
+	/// - If the `Frame` is set to `TRUNCATE` or `NONE`, the column width for each column
 	///   is set to the maximum value between the corresponding header and data widths. This ensures
 	///   that the columns are wide enough to fit both header and data without truncation.
-	/// - If the `TextFormat` is set to `Wrap`, the column width for each column is set to the data width,
+	/// - If the `Frame` is set to `WRAP`, the column width for each column is set to the data width,
 	///   allowing text to wrap within the defined column width.
 	///
 	/// The method ensures that headers, data, and their respective column widths (`header_column_widths`
@@ -392,15 +392,15 @@ impl TableBuilder {
 		let data_column_widths = self.data_column_widths().clone();
 
 		// Determine the column widths based on the format_text option
-		match self.text_format {
-			TextFormat::Truncate | TextFormat::NoFormat => {
-				// If Truncate or NoFormat, set column_widths to the max of header and data widths
+		match self.frame {
+			Frame::TRUNCATE | Frame::NONE => {
+				// If TRUNCATE or NONE, set column_widths to the max of header and data widths
 				for i in 0..column_widths.len() {
 					column_widths[i] = header_column_widths[i].max(data_column_widths[i]);
 				}
 			}
-			TextFormat::Wrap => {
-				// If Wrap, use data_column_widths
+			Frame::WRAP => {
+				// If WRAP, use data_column_widths
 				column_widths.copy_from_slice(&data_column_widths);
 			}
 		}
