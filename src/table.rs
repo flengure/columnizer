@@ -1,14 +1,14 @@
 pub use crate::rows::{
 	CellFormatter,
-	TableBuilder,
 	Alignment,
-//	Frame,
 };
+use crate::builder::TableBuilder;
 pub use prettytable::Cell;
 pub use prettytable::format;
 pub use prettytable::Row;
 pub use prettytable::Table;
 
+#[allow(dead_code)]
 impl TableBuilder {
 	pub fn table(&mut self) -> &Table {
 		// retun cached table if available
@@ -142,16 +142,11 @@ impl TableBuilder {
 		}
 
 
-
-
         // Cache the table if required
         self.table = Some(table.clone());
 
         // Return a reference to the table
         self.table.as_ref().unwrap()
-
-
-
 
 
 

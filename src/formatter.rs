@@ -1,9 +1,9 @@
-use crate::format::{clean, center, left, right, truncate};
+use crate::format::{clean, center, left, truncate};
+use crate::format::right;
 use std::fmt;
 use std::num::ParseFloatError;
 use std::str::FromStr;
 use textwrap;
-use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Frame {
@@ -45,7 +45,7 @@ pub enum Alignment {
 	CENTER,
 	LEFT,
 	RIGHT,
-	NONE,
+//	NONE,
 }
 
 impl FromStr for Alignment {
@@ -57,7 +57,7 @@ impl FromStr for Alignment {
 			"CENTER" => Ok(Alignment::CENTER),
 			"LEFT"   => Ok(Alignment::LEFT),
 			"RIGHT"  => Ok(Alignment::RIGHT),
-			"NONE"   => Ok(Alignment::LEFT),
+//			"NONE"   => Ok(Alignment::LEFT),
 			_ => Err(format!("Invalid frame type: {}", input)),
 		}
 	}
@@ -70,15 +70,15 @@ impl fmt::Display for Alignment {
 			Alignment::CENTER => write!(f, "CENTER"),
 			Alignment::LEFT   => write!(f, "LEFT"  ),
 			Alignment::RIGHT  => write!(f, "RIGHT" ),
-			Alignment::NONE   => write!(f, "LEFT"  ),
+//			Alignment::NONE   => write!(f, "LEFT"  ),
 		}
 	}
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Copy)]
 pub struct Formatter<'a> {
 	/// The raw input string that will be formatted according to the specified options.
-	#[allow(dead_code)]
 	pub input: &'a str,
 
 	/// The maximum width (in characters) allocated for the formatted field.
@@ -122,11 +122,11 @@ pub struct Formatter<'a> {
 
 	/// A flag indicating whether the content being formatted is numeric.
 	/// This can influence how certain formatting rules are applied, such as decimal padding.
-	#[allow(dead_code)]
 	pub is_numeric: Option<bool>,
 
 }
 
+#[allow(dead_code)]
 impl <'a>Formatter<'a> {
 	/// Creates a new `Formatter` instance with default settings.
 	///
@@ -139,7 +139,6 @@ impl <'a>Formatter<'a> {
 	///
 	/// A new `Formatter` with default values for formatting options.
 	pub fn new(input: &'a str) -> Self {
-		let trimmed_input = clean(&input);
 		Self {
 			                        input, // Original input
 			width:                     48, // Default 48
@@ -156,6 +155,7 @@ impl <'a>Formatter<'a> {
 	}
 }
 
+#[allow(dead_code)]
 impl <'a>Formatter<'a> {
 	pub fn set_width(&mut self, width: usize) -> &mut Self {
 		self.width = width;
@@ -203,6 +203,7 @@ impl <'a>Formatter<'a> {
 	}
 }
 
+#[allow(dead_code)]
 impl <'a>Formatter<'a> {
 
 	/// Checks if the content is numeric by first checking the cached value.
@@ -217,8 +218,15 @@ impl <'a>Formatter<'a> {
 			return is_numeric;
 		}
 
-		// Clean and normalize the input by removing the thousand separator and replacing the decimal separator with '.'
-		let cleaned_input = clean(self.input);
+		let cleaned_input = clean(Some(self.input));
+//		let cleaned_input = match clean(Some(self.input)) {
+//			Ok(cleaned) => cleaned,
+//			Err(e) => {
+//				eprintln!("Error cleaning input: {}", e);
+//				self.input.to_string()
+//			}
+//		};
+
 		let normalized_content = cleaned_input
 			.replace(self.thousand_separator, "")
 			.replace(self.decimal_separator, ".");
@@ -248,7 +256,14 @@ impl <'a>Formatter<'a> {
 	/// - **None**: Returns the cleaned input text without any formatting.
 	pub fn format_text(&self) -> String {
 		// Clean the input
-		let cleaned = clean(self.input);
+		let cleaned = clean(Some(self.input));
+//		let cleaned = match clean(Some(self.input)) {
+//			Ok(cleaned) => cleaned,
+//			Err(e) => {
+//				eprintln!("Error cleaning input: {}", e);
+//				self.input.to_string()
+//			}
+//		};
 
 		// Determine the formatted text based on the frame setting
 		let formatted_text = match self.frame {
@@ -268,15 +283,15 @@ impl <'a>Formatter<'a> {
 
 		// Apply alignment based on the settings
 		let width = self.width;
-		let aligned_result = match self.alignment {
-			Alignment::AUTO   => formatted_text,                       // No alignment
-			Alignment::CENTER => center(&formatted_text, Some(width)),
-			Alignment::LEFT   => left(&formatted_text),
-			Alignment::RIGHT  => right(&formatted_text,  Some(width)),
-			Alignment::NONE   => formatted_text,                       // No alignment
-		};
+//		let aligned_result = match self.alignment {
+//			Alignment::AUTO   => formatted_text,                       // No alignment
+//			Alignment::CENTER => center(&formatted_text, Some(width)),
+//			Alignment::LEFT   => left(&formatted_text),
+//			Alignment::RIGHT  => right(&formatted_text,  Some(width)),
+//		};
 
-		aligned_result
+		formatted_text
+//		aligned_result
 	}
 
 	/// Formats the input as a numeric value with custom formatting options.
@@ -317,7 +332,14 @@ impl <'a>Formatter<'a> {
 	/// ```
 	pub fn format_numeric(&self) -> String {
 		// Clean the input
-		let cleaned = clean(self.input);
+		let cleaned = clean(Some(self.input));
+//		let cleaned = match clean(Some(self.input)) {
+//			Ok(cleaned) => cleaned,
+//			Err(e) => {
+//				eprintln!("Error cleaning input: {}", e);
+//				self.input.to_string()
+//			}
+//		};
 
 		// Normalize input by replacing custom separators
 		let normalized = cleaned
@@ -368,16 +390,17 @@ impl <'a>Formatter<'a> {
 				let final_formatted_number = formatted_result.replace('.', &self.decimal_separator.to_string());
 
 				// Apply alignment
-				let width = self.width; // Assuming self.width is defined and represents the alignment width
-				let aligned_result = match self.alignment {
-					Alignment::AUTO   => right(&final_formatted_number,  Some(width)),
-					Alignment::CENTER => center(&final_formatted_number, Some(width)),
-					Alignment::LEFT   => left(&final_formatted_number),
-					Alignment::RIGHT  => right(&final_formatted_number,  Some(width)),
-					Alignment::NONE   => final_formatted_number, // No alignment
-				};
+//				let width = self.width; // Assuming self.width is defined and represents the alignment width
+//				let aligned_result = match self.alignment {
+//					Alignment::AUTO   => right(&final_formatted_number,  Some(width)),
+//					Alignment::CENTER => center(&final_formatted_number, Some(width)),
+//					Alignment::LEFT   => left(&final_formatted_number),
+//					Alignment::RIGHT  => right(&final_formatted_number,  Some(width)),
+////					Alignment::NONE   => final_formatted_number, // No alignment
+//				};
 
-				aligned_result // Return the aligned formatted number
+				final_formatted_number
+//				aligned_result // Return the aligned formatted number
 			}
 
 			Err(_) => {

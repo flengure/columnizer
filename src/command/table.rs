@@ -1,8 +1,8 @@
 use clap::ArgMatches;
 use crate::formatter::{Alignment, Frame};
-use crate::table::TableBuilder;
 use std::io;
 use std::io::Read;
+use crate::builder::TableBuilder;
 
 pub fn handle_cli(matches: ArgMatches) {
 

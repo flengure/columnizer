@@ -6,7 +6,6 @@ use prettytable::Table;
 ///
 /// This struct allows setting various options to control the formatting of text into columns,
 /// including field separators, header rows, divider lines, and text width.
-#[allow(dead_code)]
 #[derive(Clone)]
 pub struct TableBuilder {
 
@@ -23,6 +22,7 @@ pub struct TableBuilder {
 	///
 	/// This character is inserted between fields in the output data.
 	/// It is useful for formatting the output in a desired way.
+#[allow(dead_code)]
 	pub ofs: String,
 
 	/// The index of the row used for headers.
@@ -47,11 +47,13 @@ pub struct TableBuilder {
 	///
 	/// If `true`, no divider line will be drawn between the header and the rest of the data.
 	/// If `false`, a divider line will be added to visually separate the header from the data.
+#[allow(dead_code)]
     pub no_divider: bool,
 
     /// The character used to create a divider line between the header and the data.
     ///
     /// This character is repeated to form a divider line separating the header from the data rows.
+#[allow(dead_code)]
     pub divider_char: char,
 
     /// The global maximum allowed width for any cell.
@@ -69,6 +71,7 @@ pub struct TableBuilder {
     ///
     /// If `true`, an ellipsis (`...`) will be added to the end of truncated text.
     /// If `false`, text will be cut off without ellipsis.
+#[allow(dead_code)]
     pub no_ellipsis: bool,
 
 	pub pad_decimal_digits:       bool, // Do we align the decimals padding with 0 at the end if necessary
@@ -86,11 +89,13 @@ pub struct TableBuilder {
 	/// dont align.
     ///
 	/// Enum Alignment::{AUTO, RIGHT, LEFT}
+#[allow(dead_code)]
 	pub alignment: Alignment,
 
 	/// These field are computed and cached f
     /// An instance of `Table` from the `prettytable` crate.
 	/// to collect and apply final formatting
+#[allow(dead_code)]
 	pub table: Option<Table>,
 
 	/// Column width limits specified in the data row.
@@ -136,12 +141,16 @@ pub struct TableBuilder {
 	pub column_count:    Option<usize>, // number of columns after parsing data
 }
 
-#[allow(dead_code)]
 impl TableBuilder  {
 	/// Creates a new `Builder` with default settings.
+#[allow(dead_code)]
 	pub fn new(input: String) -> Self {
 
-		let trimmed_input = clean(&input);
+		let trimmed_input = clean(Some(&input));
+//		let trimmed_input = clean(Some(&input)).unwrap_or_else(|error| {
+//			eprintln!("Error: {}", error);
+//			String::new()
+//		});
 
 		Self {
 			input:      trimmed_input.clone(), // Sanitized input trim_and_strip_blank_lines

@@ -1,8 +1,8 @@
 pub use crate::formatter::{ Formatter as CellFormatter, Alignment, Frame };
-use unicode_width::UnicodeWidthChar;
 use unicode_width::UnicodeWidthStr;
-pub use crate::builder::TableBuilder;
+use crate::builder::TableBuilder;
 
+#[allow(dead_code)]
 impl TableBuilder {
 
 	/// Determines and returns the number of columns in the input data.
