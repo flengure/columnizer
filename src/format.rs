@@ -1,7 +1,19 @@
 use crate::io::input_or_stdin;
 use unicode_width::UnicodeWidthStr;
 use unicode_width::UnicodeWidthChar;
+use textwrap;
 
+/// Cleans the input by trimming whitespace and removing empty lines.
+///
+/// This function reads input data either from the provided option or from stdin.
+/// After reading, it trims whitespace from each line and filters out any empty lines.
+///
+/// # Parameters
+/// - `input`: An optional string input. If `None`, it reads from stdin.
+///
+/// # Returns
+/// A `String` containing the cleaned input data, with leading/trailing whitespace 
+/// removed from each line and empty lines filtered out.
 pub fn clean(input: Option<&str>) -> String {
 
 	// Read data from stdin if input is None
@@ -22,7 +34,6 @@ pub fn clean(input: Option<&str>) -> String {
 	// Join the cleaned lines with newline characters
 	cleaned_lines.join("\n")
 }
-
 
 /// Right-aligns the lines in the input string to the specified width.
 ///
@@ -94,6 +105,22 @@ pub fn left(input: Option<&str>) -> String {
 		.collect();
 
 	aligned_lines.join("\n")
+}
+#[allow(dead_code)]
+pub fn wrap(input: Option<&str>, width: usize) -> String {
+
+	let input_data = input_or_stdin(input, 5, 500);
+
+	let cleaned = clean(Some(&input_data));
+
+	let wrapped = textwrap::wrap(&cleaned, width);
+    // Convert Vec<Cow<'_, str>> to String by joining the wrapped lines with newlines
+    wrapped
+        .into_iter()
+        .map(|line| line.to_string())
+        .collect::<Vec<_>>()
+        .join("\n")
+
 }
 
 #[allow(dead_code)]
