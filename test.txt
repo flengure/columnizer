@@ -2,7 +2,7 @@
 col1 col2 col3 col4
 champagne 2010.675 towel 75 
 bingo 1 45 123.0
-sugar 560.0 swindle 3.7
+sugar 560.0 swindle 3.7      
 
 
 

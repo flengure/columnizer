@@ -1,94 +1,26 @@
-use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
-use std::io::{self, Error, ErrorKind};
-use std::thread::sleep;
-use std::time::Duration;
-use std::io::Read;
+use crate::io::input_or_stdin;
+use unicode_width::UnicodeWidthStr;
+use unicode_width::UnicodeWidthChar;
 
-/// Reads input from stdin with a timeout-like behavior (retries).
-///
-/// This function attempts to read all available input from stdin with retries.
-/// If no input is provided after the maximum number of attempts, it returns an error.
-///
-/// # Parameters
-///
-/// - `max_attempts`: The maximum number of retries before giving up.
-/// - `delay`: The duration to wait between retries (in milliseconds).
-///
-/// # Returns
-///
-/// - `Ok(String)`: The input from stdin if successful (may contain multiple lines).
-/// - `Err(Error)`: An error if no input is provided after the retries.
-pub fn read_from_stdin_with_timeout(input: Option<&str>, max_attempts: usize, delay: u64) -> Result<String, Error> {
-    let stdin = io::stdin();
-    let mut handle = stdin.lock();
-    let mut buf = String::new();
-
-	match input {
-		Some(input_str) => {
-			return Ok(input_str.to_string());
-		},
-		None => {
-
-			// Retry reading from stdin up to `max_attempts` times
-			for attempt in 0..max_attempts {
-				let bytes_read = handle.read_to_string(&mut buf);
-
-				match bytes_read {
-					Ok(0) => {
-						// If no bytes are read, wait for a while and retry
-						if attempt == max_attempts - 1 {
-							// Last attempt, return an error
-							return Err(Error::new(ErrorKind::Other, "No input provided"));
-						}
-						sleep(Duration::from_millis(delay));
-					}
-					Ok(_) => {
-						// Return the input if successfully read
-						return Ok(buf.trim().to_string());
-					}
-					Err(e) => {
-						// Handle read error (would block, interrupted, etc.)
-						if e.kind() == ErrorKind::WouldBlock && attempt < max_attempts - 1 {
-							sleep(Duration::from_millis(delay));
-							continue; // Retry on WouldBlock
-						}
-						// Return the error if it's not WouldBlock or max attempts reached
-						return Err(Error::new(ErrorKind::Other, format!("Failed to read input: {}", e)));
-					}
-				}
-			}
-
-			Err(Error::new(ErrorKind::Other, "No input provided"))
-		}
-	}
-}
-
-/// Cleans the input string by removing blank lines and trimming whitespace.
-///
-/// # Arguments
-///
-/// * `input` - An optional string slice that needs to be cleaned. If `None`, reads from stdin.
-///
-/// # Returns
-///
-/// A `Result<String, Error>` indicating success with the cleaned string or an error if neither input nor stdin is available.
 pub fn clean(input: Option<&str>) -> String {
-	let input_data = read_from_stdin_with_timeout(input, 5, 500).expect("REASON");
 
-    // Clean the input by trimming lines and removing empty lines
-    let cleaned_lines: Vec<String> = input_data
-        .lines()
-        .map(|line| line.trim().to_string()) // Trim each line
-        .filter(|line| !line.is_empty())     // Filter out empty lines
-        .collect();
+	// Read data from stdin if input is None
+	let input_data = input_or_stdin(input, 5, 500);
 
-    // If there are no cleaned lines, return an empty string
-    if cleaned_lines.is_empty() {
-        return String::new();
-    }
+	// Clean the input by trimming lines and removing empty lines
+	let cleaned_lines: Vec<String> = input_data
+		.lines()
+		.map(|line| line.trim().to_string()) // Trim each line
+		.filter(|line| !line.is_empty())	 // Filter out empty lines
+		.collect();
 
-    // Join the cleaned lines with newline characters
-    cleaned_lines.join("\n")
+	// If there are no cleaned lines, return an empty string
+	if cleaned_lines.is_empty() {
+		return String::new();
+	}
+
+	// Join the cleaned lines with newline characters
+	cleaned_lines.join("\n")
 }
 
 
@@ -104,10 +36,15 @@ pub fn clean(input: Option<&str>) -> String {
 ///
 /// A `String` with each line right-aligned to the specified width or to the maximum line width if no width is provided.
 #[allow(dead_code)]
-pub fn right(input: &str, width: Option<usize>) -> String {
-	// Split the input into lines
-	let lines: Vec<&str> = input.lines().collect();
+pub fn right(input: Option<&str>, width: Option<usize>) -> String {
 
+	let input_data = input_or_stdin(input, 5, 500);
+
+	let cleaned = clean(Some(&input_data));
+
+	// Split the input into lines
+	let lines: Vec<&str> = cleaned.lines().collect();
+	
 	// Calculate the maximum width of the lines
 	let max_line_width = lines.iter()
 		.map(|line| line.width())
@@ -119,6 +56,9 @@ pub fn right(input: &str, width: Option<usize>) -> String {
 		Some(w) if w > 0 => std::cmp::max(w, max_line_width),
 		_ => max_line_width,
 	};
+
+	// Ensure effective_width is positive; if max_line_width is 0, use 1 to avoid formatting issues
+	let effective_width = if effective_width == 0 { 1 } else { effective_width };
 
 	// Iterate through each line and right-align it
 	let aligned_lines: Vec<String> = lines
@@ -142,22 +82,29 @@ pub fn right(input: &str, width: Option<usize>) -> String {
 }
 
 #[allow(dead_code)]
-pub fn left(input: &str) -> String {
-	// Split the input into lines and trim each line
-	let aligned_lines: Vec<String> = input
+pub fn left(input: Option<&str>) -> String {
+
+	let input_data = input_or_stdin(input, 5, 500);
+
+	let cleaned = clean(Some(&input_data));
+
+	let aligned_lines: Vec<String> = cleaned
 		.lines()
-		.map(|line| line.trim_start()) // Trim leading whitespace
-		.map(String::from)             // Convert to String
+		.map(String::from)
 		.collect();
 
-	// Join the aligned lines into a single output string
 	aligned_lines.join("\n")
 }
 
 #[allow(dead_code)]
-pub fn center(input: &str, width: Option<usize>) -> String {
+pub fn center(input: Option<&str>, width: Option<usize>) -> String {
+
+	let input_data = input_or_stdin(input, 5, 500);
+
+	let cleaned = clean(Some(&input_data));
+
 	// Split the input into lines
-	let lines: Vec<&str> = input.lines().collect();
+	let lines: Vec<&str> = cleaned.lines().collect();
 
 	// Calculate the maximum width of the lines
 	let max_line_width = lines.iter()
@@ -205,12 +152,19 @@ pub fn center(input: &str, width: Option<usize>) -> String {
 ///
 /// A `String` with each line truncated to the specified width, optionally followed by ellipses if the line was truncated.
 #[allow(dead_code)]
-pub fn truncate(input: &str, width: usize, no_ellipsis: Option<bool>) -> String {
+pub fn truncate(input: Option<&str>, width: Option<usize>, no_ellipsis: Option<bool>) -> String {
+
+	let input_data = input_or_stdin(input, 5, 500);
+
+	let cleaned = clean(Some(&input_data));
+
+	let width = width.unwrap_or(0);
+
 	// Determine if ellipsis should be used
 	let use_ellipsis = no_ellipsis.unwrap_or(false) == false;
 
 	// Split input into lines and process each line
-	let truncated_lines: Vec<String> = input
+	let truncated_lines: Vec<String> = cleaned
 		.lines()
 		.map(|line| {
 			let text_width = line.width();

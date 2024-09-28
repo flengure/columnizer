@@ -1,5 +1,7 @@
-use crate::format::{clean, center, left, truncate};
+use crate::format::{clean, truncate};
 use crate::format::right;
+use crate::format::left;
+use crate::format::center;
 use std::fmt;
 use std::num::ParseFloatError;
 use std::str::FromStr;
@@ -269,7 +271,7 @@ impl <'a>Formatter<'a> {
 		let formatted_text = match self.frame {
 			Frame::TRUNCATE => {
 				// Call the truncate function directly
-				truncate(&cleaned, self.width, Some(self.no_ellipsis))
+				truncate(Some(&cleaned), Some(self.width), Some(self.no_ellipsis))
 			}
 			Frame::WRAP => {
 				// Wrap the text to the specified width
@@ -283,15 +285,15 @@ impl <'a>Formatter<'a> {
 
 		// Apply alignment based on the settings
 		let width = self.width;
-//		let aligned_result = match self.alignment {
-//			Alignment::AUTO   => formatted_text,                       // No alignment
-//			Alignment::CENTER => center(&formatted_text, Some(width)),
-//			Alignment::LEFT   => left(&formatted_text),
-//			Alignment::RIGHT  => right(&formatted_text,  Some(width)),
-//		};
+		let aligned_result = match self.alignment {
+			Alignment::AUTO   => formatted_text,                       // No alignment
+			Alignment::CENTER => center(Some(&formatted_text), Some(width)),
+			Alignment::LEFT   => left(Some(&formatted_text)),
+			Alignment::RIGHT  => right(Some(&formatted_text),  Some(width)),
+		};
 
-		formatted_text
-//		aligned_result
+//		formatted_text
+		aligned_result
 	}
 
 	/// Formats the input as a numeric value with custom formatting options.

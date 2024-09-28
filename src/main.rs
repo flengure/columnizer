@@ -1,8 +1,11 @@
 mod format;
+mod io;
 use clap::{Args, Parser, Subcommand};
 use crate::format::clean;
 use crate::format::right;
-use crate::format::read_from_stdin_with_timeout;
+use crate::format::left;
+use crate::format::center;
+use crate::format::truncate;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -16,7 +19,10 @@ struct Cli {
 enum Commands {
     /// Sanitizes the input text by removing leading and trailing blank lines and whitespace
     Clean(CleanCli),
-//    Right(RightCli),
+	Left(LeftCli),
+	Right(RightCli),
+	Truncate(TruncateCli),
+	Center(CenterCli),
 }
 
 #[derive(Args)]
@@ -24,34 +30,55 @@ struct CleanCli {
     input: Option<String>,
 }
 
-//#[derive(Args)]
-//struct RightCli {
-//    input: Option<String>,
-//    width: Option<usize>,
-//}
+#[derive(Args)]
+struct LeftCli {
+	input: Option<String>,
+}
+
+#[derive(Args)]
+struct RightCli {
+	input: Option<String>,
+
+    #[arg(short, long)]
+	width: Option<usize>,
+}
+
+#[derive(Args)]
+struct CenterCli {
+	input: Option<String>,
+
+    #[arg(short, long)]
+	width: Option<usize>,
+}
+
+#[derive(Args)]
+struct TruncateCli {
+	input: Option<String>,
+
+    #[arg(short, long)]
+	width: Option<usize>,
+
+    #[arg(short, long)]
+	no_ellipsis: bool,
+}
 
 fn main() {
     let cli = Cli::parse();
-
     match &cli.command {
         Commands::Clean(input) => {
-			clean(input.input.as_deref());
+			println!("{}", clean(input.input.as_deref()));
 		},
-//        Commands::Right(input) => {
-//			let input_data = match input.input.as_deref() {
-//				Some(input_str) => {
-//					let result = right(input_str, input.width);
-//				},
-//				None => {
-//					match read_from_stdin_with_timeout(5, 500) {
-//						Ok(data) => {
-//							println!("{}", right(&data, input.width));
-//						},
-//						Err(_) => return ,
-//					}
-//				}
-//			};
-//
-//		},
+        Commands::Left(input) => {
+			println!("{}", left(input.input.as_deref()));
+		},
+        Commands::Right(input) => {
+			println!("{}", right(input.input.as_deref(), input.width));
+		},
+        Commands::Truncate(input) => {
+			println!("{}", truncate(input.input.as_deref(), input.width, Some(input.no_ellipsis)));
+		},
+        Commands::Center(input) => {
+			println!("{}", center(input.input.as_deref(), input.width));
+		},
     }
 }
