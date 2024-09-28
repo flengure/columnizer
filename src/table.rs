@@ -46,7 +46,7 @@ impl TableBuilder {
 						(format::Alignment::LEFT, Alignment::LEFT)
 					};
 
-					let mut formatter = CellFormatter::new(header_cell)
+					let mut formatter = CellFormatter::new(Some(header_cell.to_string()))
 						.set_width(column_widths[i])
 						.set_alignment(alignment)
 						.set_frame(self.frame)
@@ -111,7 +111,7 @@ impl TableBuilder {
 						(format::Alignment::LEFT, Alignment::LEFT)
 					};
 
-					let mut formatter = CellFormatter::new(data_cell)
+					let mut formatter = CellFormatter::new(Some(data_cell.to_string()))
 						.set_width(column_widths[i])
 						.set_alignment(alignment)
 						.set_frame(self.frame)

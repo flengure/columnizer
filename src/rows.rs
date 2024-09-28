@@ -299,7 +299,7 @@ impl TableBuilder {
 				for (j, cell) in row.iter_mut().enumerate() {
 					let cell_value = cell.clone();
 			   
-						let mut formatter = CellFormatter::new(&cell_value)
+						let mut formatter = CellFormatter::new(Some(cell_value))
 							.set_frame(Frame::NONE)
 							.set_alignment(Alignment::LEFT)
 							.set_decimal_separator(self.decimal_separator)

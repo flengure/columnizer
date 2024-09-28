@@ -1,13 +1,11 @@
-use crate::format::{clean, truncate};
-use crate::format::right;
-use crate::format::left;
-use crate::format::center;
+use clap::ValueEnum;
+use crate::format::{ center, clean, left, right, truncate, wrap };
+use crate::io::input_or_stdin;
 use std::fmt;
 use std::num::ParseFloatError;
 use std::str::FromStr;
-use textwrap;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 pub enum Frame {
 	/// Shorten the text to fit the width
 	TRUNCATE,
@@ -40,14 +38,13 @@ impl fmt::Display for Frame {
 	}
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 pub enum Alignment {
 	/// Align to the right if numeric
 	AUTO,
 	CENTER,
 	LEFT,
 	RIGHT,
-//	NONE,
 }
 
 impl FromStr for Alignment {
@@ -59,7 +56,6 @@ impl FromStr for Alignment {
 			"CENTER" => Ok(Alignment::CENTER),
 			"LEFT"   => Ok(Alignment::LEFT),
 			"RIGHT"  => Ok(Alignment::RIGHT),
-//			"NONE"   => Ok(Alignment::LEFT),
 			_ => Err(format!("Invalid frame type: {}", input)),
 		}
 	}
@@ -72,16 +68,15 @@ impl fmt::Display for Alignment {
 			Alignment::CENTER => write!(f, "CENTER"),
 			Alignment::LEFT   => write!(f, "LEFT"  ),
 			Alignment::RIGHT  => write!(f, "RIGHT" ),
-//			Alignment::NONE   => write!(f, "LEFT"  ),
 		}
 	}
 }
 
 #[allow(dead_code)]
-#[derive(Clone, Copy)]
-pub struct Formatter<'a> {
+#[derive(Clone)]
+pub struct Formatter {
 	/// The raw input string that will be formatted according to the specified options.
-	pub input: &'a str,
+	pub input: Option<String>,
 
 	/// The maximum width (in characters) allocated for the formatted field.
 	/// This width determines how the input text will be displayed in the output.
@@ -129,7 +124,7 @@ pub struct Formatter<'a> {
 }
 
 #[allow(dead_code)]
-impl <'a>Formatter<'a> {
+impl Formatter {
 	/// Creates a new `Formatter` instance with default settings.
 	///
 	/// # Arguments
@@ -140,9 +135,13 @@ impl <'a>Formatter<'a> {
 	/// # Returns
 	///
 	/// A new `Formatter` with default values for formatting options.
-	pub fn new(input: &'a str) -> Self {
+	pub fn new(input: Option<String>) -> Self {
+
+		let input_data = input_or_stdin(input.as_deref(), 5, 500);
+		let cleaned = clean(Some(&input_data)).clone();
+		
 		Self {
-			                        input, // Original input
+			input:          Some(cleaned), // Cleaned input
 			width:                     48, // Default 48
 			frame:        Frame::TRUNCATE, // Default TRUNCATE
 			alignment:    Alignment::AUTO, // Default text left, numbers right
@@ -158,7 +157,7 @@ impl <'a>Formatter<'a> {
 }
 
 #[allow(dead_code)]
-impl <'a>Formatter<'a> {
+impl Formatter {
 	pub fn set_width(&mut self, width: usize) -> &mut Self {
 		self.width = width;
 		self
@@ -206,7 +205,7 @@ impl <'a>Formatter<'a> {
 }
 
 #[allow(dead_code)]
-impl <'a>Formatter<'a> {
+impl Formatter {
 
 	/// Checks if the content is numeric by first checking the cached value.
 	/// If not cached, normalizes the content and checks if it can be parsed as f64.
@@ -220,18 +219,15 @@ impl <'a>Formatter<'a> {
 			return is_numeric;
 		}
 
-		let cleaned_input = clean(Some(self.input));
-//		let cleaned_input = match clean(Some(self.input)) {
-//			Ok(cleaned) => cleaned,
-//			Err(e) => {
-//				eprintln!("Error cleaning input: {}", e);
-//				self.input.to_string()
-//			}
-//		};
+		// Ensure that input is present (unwrap Option to get &str)
+		let normalized_content = if let Some(input_str) = &self.input {
+			input_str
+				.replace(self.thousand_separator, "")  // Using characters directly
+				.replace(self.decimal_separator, ".")
+		} else {
+			String::new()
+		};
 
-		let normalized_content = cleaned_input
-			.replace(self.thousand_separator, "")
-			.replace(self.decimal_separator, ".");
 
 		// Try to parse the normalized content as f64 and cache the result
 		self.is_numeric = Some(normalized_content.parse::<f64>().is_ok());
@@ -258,28 +254,20 @@ impl <'a>Formatter<'a> {
 	/// - **None**: Returns the cleaned input text without any formatting.
 	pub fn format_text(&self) -> String {
 		// Clean the input
-		let cleaned = clean(Some(self.input));
-//		let cleaned = match clean(Some(self.input)) {
-//			Ok(cleaned) => cleaned,
-//			Err(e) => {
-//				eprintln!("Error cleaning input: {}", e);
-//				self.input.to_string()
-//			}
-//		};
 
 		// Determine the formatted text based on the frame setting
 		let formatted_text = match self.frame {
 			Frame::TRUNCATE => {
 				// Call the truncate function directly
-				truncate(Some(&cleaned), Some(self.width), Some(self.no_ellipsis))
+				truncate(self.input.as_deref(), Some(self.width), Some(self.no_ellipsis))
 			}
 			Frame::WRAP => {
 				// Wrap the text to the specified width
-				textwrap::wrap(&cleaned, self.width).join("\n")
+				wrap(self.input.as_deref(), self.width)
 			}
 			_ => {
 				// If no frame is specified, just return the cleaned text
-				cleaned
+				self.input.as_ref().expect("REASON").clone()
 			}
 		};
 
@@ -292,7 +280,6 @@ impl <'a>Formatter<'a> {
 			Alignment::RIGHT  => right(Some(&formatted_text),  Some(width)),
 		};
 
-//		formatted_text
 		aligned_result
 	}
 
@@ -333,20 +320,17 @@ impl <'a>Formatter<'a> {
 	/// assert_eq!(formatter.format_numeric(), "      1.23");
 	/// ```
 	pub fn format_numeric(&self) -> String {
-		// Clean the input
-		let cleaned = clean(Some(self.input));
-//		let cleaned = match clean(Some(self.input)) {
-//			Ok(cleaned) => cleaned,
-//			Err(e) => {
-//				eprintln!("Error cleaning input: {}", e);
-//				self.input.to_string()
-//			}
-//		};
 
 		// Normalize input by replacing custom separators
-		let normalized = cleaned
-			.replace(self.thousand_separator, ",")
-			.replace(self.decimal_separator, ".");
+
+		// Ensure that input is present (unwrap Option to get &str)
+		let normalized = if let Some(input_str) = &self.input {
+			input_str
+				.replace(self.thousand_separator, "")  // Using characters directly
+				.replace(self.decimal_separator, ".")
+		} else {
+			String::new()
+		};
 
 		// Attempt to parse the normalized input as a number
 		let result: Result<f64, ParseFloatError> = normalized.parse();
@@ -392,17 +376,15 @@ impl <'a>Formatter<'a> {
 				let final_formatted_number = formatted_result.replace('.', &self.decimal_separator.to_string());
 
 				// Apply alignment
-//				let width = self.width; // Assuming self.width is defined and represents the alignment width
-//				let aligned_result = match self.alignment {
-//					Alignment::AUTO   => right(&final_formatted_number,  Some(width)),
-//					Alignment::CENTER => center(&final_formatted_number, Some(width)),
-//					Alignment::LEFT   => left(&final_formatted_number),
-//					Alignment::RIGHT  => right(&final_formatted_number,  Some(width)),
-////					Alignment::NONE   => final_formatted_number, // No alignment
-//				};
+				let width = self.width;
+				let aligned_result = match self.alignment {
+					Alignment::AUTO   => right(Some(&final_formatted_number),  Some(width)),
+					Alignment::CENTER => center(Some(&final_formatted_number), Some(width)),
+					Alignment::LEFT   => left(Some(&final_formatted_number)),
+					Alignment::RIGHT  => right(Some(&final_formatted_number),  Some(width)),
+				};
 
-				final_formatted_number
-//				aligned_result // Return the aligned formatted number
+				aligned_result
 			}
 
 			Err(_) => {

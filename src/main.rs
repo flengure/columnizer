@@ -1,13 +1,9 @@
 mod format;
+mod formatter;
 mod io;
 use clap::{Args, Parser, Subcommand};
-use crate::format::clean;
-use crate::format::right;
-use crate::format::left;
-use crate::format::center;
-use crate::format::truncate;
-use crate::format::wrap;
-
+use crate::format::{ center, clean, left, right, truncate, wrap };
+use crate::formatter::{ Alignment, Frame, Formatter };
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -19,6 +15,8 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+	/// Formats text based on cetain parameters
+	Format(FormatCli),
 	/// Sanitizes the input text by removing leading and trailing blank lines and whitespace
 	Clean(CleanCli),
 	/// Aligns to the right, padding with spaces up to width
@@ -31,6 +29,46 @@ enum Commands {
 	Wrap(WrapCli),
 	/// Truncates to width
 	Truncate(TruncateCli),
+}
+
+#[derive(Args)]
+struct FormatCli {
+	input: Option<String>,
+
+	#[arg(default_value_t = 48)]
+	#[arg(short, long)]
+	width: usize,
+
+	#[arg(default_value_t = Frame::TRUNCATE)]
+	#[arg(value_enum)]
+	#[arg(short, long)]
+	frame: Frame,
+
+	#[arg(short, long)]
+	no_ellipsis: bool,
+
+	#[arg(default_value_t = Alignment::AUTO)]
+	#[arg(value_enum)]
+	#[arg(short, long)]
+	alignment: Alignment,
+
+	#[arg(short, long)]
+	pad_decimal_digits: bool,
+
+	#[arg(default_value_t = 2)]
+	#[arg(short, long)]
+	max_decimal_digits: usize,
+
+	#[arg(default_value_t = '.')]
+	#[arg(short, long)]
+	decimal_separator: char,
+
+	#[arg(short, long)]
+	use_thousand_separator: bool,
+
+	#[arg(default_value_t = ',')]
+	#[arg(short, long)]
+	thousand_separator: char,
 }
 
 #[derive(Args)]
@@ -98,6 +136,23 @@ fn main() {
 		},
 		Commands::Wrap(input) => {
 			println!("{}", wrap(input.input.as_deref(), input.width));
+		},
+		Commands::Format(input) => {
+			let mut formatter = Formatter::new(input.input.clone())
+				.set_width(input.width)
+				.set_frame(input.frame)
+				.set_no_ellipsis(input.no_ellipsis)
+				.set_alignment(input.alignment)
+				.set_pad_decimal_digits(input.pad_decimal_digits)
+				.set_max_decimal_digits(input.max_decimal_digits)
+				.set_decimal_separator(input.decimal_separator)
+				.set_use_thousand_separator(input.use_thousand_separator)
+				.set_thousand_separator(input.thousand_separator)
+				.clone();
+
+			let formatted_text = formatter.formatted();
+			
+			println!("{}", formatted_text);
 		},
 	}
 }
