@@ -1,6 +1,5 @@
 use clap::{ Args };
-use crate::format::{ clean };
-use crate::formatter::{ Alignment, Frame };
+use crate::text::{ clean, Alignment, Frame };
 use crate::io::{ input_or_stdin };
 use prettytable::{ Table };
 

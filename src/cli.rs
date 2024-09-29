@@ -1,6 +1,5 @@
 use clap::{Args, Parser, Subcommand};
-use crate::format::{center, clean, left, right, truncate, wrap};
-use crate::formatter::Formatter;
+use crate::text::{center, clean, left, right, truncate, wrap, TextFormatter};
 use crate::builder::TableBuilder;
 
 #[derive(Parser)]
@@ -26,7 +25,7 @@ pub enum Formats {
 	/// Truncates to width
 	Truncate(TruncateCli),
 	/// Formats text based on certain parameters
-	Format(Formatter),
+	Format(TextFormatter),
 	/// Formats table based on certain parameters
 	Table(TableBuilder),
 }
@@ -98,7 +97,7 @@ pub fn run_cli() {
 			println!("{}", wrap(input.input.as_deref(), input.width));
 		},
 		Formats::Format(input) => {
-			let mut formatter = Formatter::new(input.input.clone())
+			let mut formatter = TextFormatter::new(input.input.clone())
 				.set_width(input.width)
 				.set_frame(input.frame)
 				.set_no_ellipsis(input.no_ellipsis)

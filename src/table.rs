@@ -1,9 +1,6 @@
-pub use crate::rows::{ CellFormatter, Alignment };
+pub use crate::text::{ TextFormatter, Alignment };
 use crate::builder::TableBuilder;
-pub use prettytable::Cell;
-pub use prettytable::format;
-pub use prettytable::Row;
-pub use prettytable::Table;
+pub use prettytable::{format, Cell, Row, Table};
 
 #[allow(dead_code)]
 impl TableBuilder {
@@ -43,7 +40,7 @@ impl TableBuilder {
 						(format::Alignment::LEFT, Alignment::LEFT)
 					};
 
-					let mut formatter = CellFormatter::new(Some(header_cell.to_string()))
+					let mut formatter = TextFormatter::new(Some(header_cell.to_string()))
 						.set_width(column_widths[i])
 						.set_alignment(alignment)
 						.set_frame(self.frame)
@@ -108,7 +105,7 @@ impl TableBuilder {
 						(format::Alignment::LEFT, Alignment::LEFT)
 					};
 
-					let mut formatter = CellFormatter::new(Some(data_cell.to_string()))
+					let mut formatter = TextFormatter::new(Some(data_cell.to_string()))
 						.set_width(column_widths[i])
 						.set_alignment(alignment)
 						.set_frame(self.frame)

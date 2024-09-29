@@ -1,4 +1,4 @@
-pub use crate::formatter::{ Formatter as CellFormatter, Alignment, Frame };
+pub use crate::text::{ TextFormatter, Alignment, Frame };
 use unicode_width::UnicodeWidthStr;
 use crate::builder::TableBuilder;
 
@@ -165,7 +165,7 @@ impl TableBuilder {
 	/// # Example
 	///
 	/// ```
-	/// let exa = CellFormatter::new()
+	/// let exa = TextFormatter::new()
 	///  ...
 	///	 .clear_headers()
 	///	 .headers(); // Forces a recalculation of headers
@@ -299,7 +299,7 @@ impl TableBuilder {
 				for (j, cell) in row.iter_mut().enumerate() {
 					let cell_value = cell.clone();
 			   
-						let mut formatter = CellFormatter::new(Some(cell_value))
+						let mut formatter = TextFormatter::new(Some(cell_value))
 							.set_frame(Frame::NONE)
 							.set_alignment(Alignment::LEFT)
 							.set_decimal_separator(self.decimal_separator)
