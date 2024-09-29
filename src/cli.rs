@@ -97,7 +97,7 @@ pub fn run_cli(cli: &Cli) {
 			println!("{}", wrap(input.input.as_deref(), input.width));
 		},
 		Formats::Format(input) => {
-			let mut formatter = TextFormatter::new(input.input.clone())
+			let mut text = TextFormatter::new(input.input.clone())
 				.set_width(input.width)
 				.set_frame(input.frame)
 				.set_no_ellipsis(input.no_ellipsis)
@@ -109,7 +109,7 @@ pub fn run_cli(cli: &Cli) {
 				.set_thousand_separator(input.thousand_separator)
 				.clone();
 
-			let formatted_text = formatter.formatted();
+			let formatted_text = text.formatted();
 			println!("{}", formatted_text);
 		},
 		Formats::Table(input) => {
@@ -132,10 +132,8 @@ pub fn run_cli(cli: &Cli) {
 				.set_thousand_separator(input.thousand_separator)
 				.clone();
 
-			let formatted_table = table.build();
-			formatted_table.printstd();
-//			println!("{}", formatted_table);
-//			println!("{}", table);
+			let built_table = table.build();
+			built_table.printstd();
 		},
 	}
 }
