@@ -75,8 +75,8 @@ pub struct TruncateCli {
 	pub no_ellipsis: bool,
 }
 
-pub fn run_cli() {
-	let cli = Cli::parse();
+pub fn run_cli(cli: &Cli) {
+
 	match &cli.command {
 		Formats::Center(input) => {
 			println!("{}", center(input.input.as_deref(), input.width));
