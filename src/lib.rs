@@ -1,4 +1,4 @@
-mod cli;
-mod io;
-mod table;
-mod text;
+pub mod cli;
+pub mod io;
+pub mod table;
+pub mod text;
