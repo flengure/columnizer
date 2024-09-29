@@ -2,44 +2,32 @@ use std::io::{self, Cursor, Read};
 use std::thread::sleep;
 use std::time::Duration;
 
-/// Reads input from a provided string or `stdin` with a configurable retry mechanism.
+/// Reads input from a provided source or falls back to reading from stdin.
 ///
-/// # Parameters:
-/// - `input`: An optional string slice. If `Some(input_str)` is provided, it will be returned
-///   directly. If `None`, the function will attempt to read from `stdin`.
-/// - `max_attempts`: The maximum number of retry attempts when reading from `stdin` if no data
-///   is initially available. A value of `5` will try up to 5 times.
-/// - `delay`: The amount of time (in milliseconds) to wait between attempts when no data is
-///   available from `stdin`. This is useful for situations where input may take time to appear.
+/// If `input` is provided as an `Option<R>` where `R` implements `Read`, the function
+/// will read from this input. If `input` is `None`, the function will attempt to read
+/// from stdin. It retries reading from stdin up to `max_attempts` times, with a delay
+/// of `delay` milliseconds between each attempt.
 ///
-/// # Returns:
-/// - A `String` containing the input from either the provided `input` or `stdin`.
-/// - If input is provided, it returns that string immediately.
-/// - If reading from `stdin`, it returns the trimmed string once data is successfully read.
-/// - If the maximum number of attempts is exhausted, it returns an empty string.
+/// # Arguments
 ///
-/// # Behavior:
-/// - On failed attempts to read from `stdin`, the buffer is cleared and sleeps for the specified
-///   `delay` before retrying, up to `max_attempts`.
-/// - If an error occurs during the read, the function retries unless the error persists after
-///   `max_attempts`, returning an empty string.
-/// - The result of a successful `stdin` read is printed to `stderr` using `eprintln!`.
+/// * `input` - An optional input stream that implements `Read`. If `None`, stdin is used.
+/// * `max_attempts` - The number of times to retry reading from stdin if no input is provided.
+/// * `delay` - The number of milliseconds to wait between retry attempts.
 ///
-/// # Example:
+/// # Returns
+///
+/// A `String` containing the trimmed lines of input. If no input is provided and reading
+/// from stdin fails after `max_attempts`, an empty string is returned.
+///
+/// # Example
+///
 /// ```
-/// let input = input_or_stdin(None, 3, 500); // Attempts to read from stdin 3 times with 500ms delay.
-/// println!("Input received: {}", input);
-///
-/// let input_from_arg = input_or_stdin(Some("Hello"), 3, 500); // Directly uses the provided input.
-/// println!("Input from arg: {}", input_from_arg);
+/// use std::io::Cursor;
+/// let input = Some(Cursor::new("example input\n"));
+/// let result = input_or_stdin(input, 3, 500);
+/// assert_eq!(result, "example input");
 /// ```
-///
-/// # Panics:
-/// - This function does not panic under normal circumstances. It returns an empty string if
-///   `stdin` is unavailable or an error occurs after the allowed number of attempts.
-///
-/// # Notes:
-/// - Useful for cases where input may be delayed, such as reading from a file or pipe.
 pub fn input_or_stdin<R: Read>(input: Option<R>, max_attempts: usize, delay: u64) -> String {
     // If input is provided, read from it
     if let Some(mut reader) = input {
@@ -90,55 +78,31 @@ pub fn input_or_stdin<R: Read>(input: Option<R>, max_attempts: usize, delay: u64
     String::new() // Return empty string after all attempts
 }
 
+/// Reads a string from a provided input or stdin, with retries.
+///
+/// This function wraps `input_or_stdin` to accept an optional string slice (`&str`) as input.
+/// If the string slice is provided, it converts it into an input stream and reads from it.
+/// Otherwise, it falls back to reading from stdin with retries.
+///
+/// # Arguments
+///
+/// * `input` - An optional string slice. If `None`, stdin is used as the input source.
+/// * `max_attempts` - The number of times to retry reading from stdin if no input is provided.
+/// * `delay` - The number of milliseconds to wait between retry attempts.
+///
+/// # Returns
+///
+/// A `String` containing the trimmed lines of input. If reading fails after `max_attempts`,
+/// an empty string is returned.
+///
+/// # Example
+///
+/// ```
+/// let input = Some("test input");
+/// let result = str_or_stdin(input, 3, 500);
+/// assert_eq!(result, "test input");
+/// ```
 pub fn str_or_stdin(input: Option<&str>, max_attempts: usize, delay: u64) -> String {
     input_or_stdin(input.map(|s| Cursor::new(s.as_bytes())), max_attempts, delay)
 }
-
-//pub fn input_or_stdin(input: Option<&str>, max_attempts: usize, delay: u64) -> String {
-//	// If input is provided, use it directly
-//	if let Some(input_str) = input {
-//		return input_str.to_string();
-//	}
-//
-//	// Otherwise, attempt to read from stdin
-//	let stdin = io::stdin();
-//	let mut handle = stdin.lock();
-//	let mut buf = String::new();
-//
-//	for attempt in 0..max_attempts {
-//		match handle.read_to_string(&mut buf) {
-//			Ok(0) => {
-//				// No data was read, retry after a delay
-//				if attempt == max_attempts - 1 {
-//					return String::new();  // Give up after max_attempts
-//				}
-//				sleep(Duration::from_millis(delay));
-//			}
-//			Ok(_) => {
-//				// Successfully read input, trim and return it
-//				let result = buf
-//					.lines()                    // Split into lines
-//					.map(|line| line.trim())    // Trim each line
-//					.map(String::from)          // Convert &str to String
-//					.collect::<Vec<_>>()        // Collect into a Vec<String>
-//					.join("\n");
-//
-//				return result.to_string();
-//			}
-//			Err(e) => {
-//				// Handle error, retry if it's a WouldBlock error and we have retries left
-//				if e.kind() == ErrorKind::WouldBlock && attempt < max_attempts - 1 {
-//					sleep(Duration::from_millis(delay));
-//				} else {
-//					// If not WouldBlock or out of attempts, return empty string
-//					return String::new();
-//				}
-//			}
-//		}
-//		buf.clear();  // Clear buffer after failed attempt before next retry
-//	}
-//	
-//	// If we exhaust attempts and still have no input, return an empty string
-//	String::new()
-//}
 
