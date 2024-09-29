@@ -1,5 +1,5 @@
 use clap::{ Args };
-use crate::io::{ input_or_stdin };
+use crate::io::{ str_or_stdin };
 use crate::text::{ TextFormatter, Alignment, Frame, clean };
 pub use prettytable::{format, Cell, Row, Table};
 use unicode_width::UnicodeWidthStr;
@@ -145,7 +145,7 @@ impl TableBuilder  {
 	/// Creates a new `Builder` with default settings.
 	pub fn new(input: Option<String>) -> Self {
 
-		let input_data = input_or_stdin(input.as_deref(), 5, 500);
+		let input_data = str_or_stdin(input.as_deref(), 5, 500);
 		let cleaned = clean(Some(&input_data)).clone();
 
 		Self {

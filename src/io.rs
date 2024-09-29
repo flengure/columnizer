@@ -1,7 +1,6 @@
-use std::io::{self, ErrorKind};
+use std::io::{self, Cursor, Read};
 use std::thread::sleep;
 use std::time::Duration;
-use std::io::Read;
 
 /// Reads input from a provided string or `stdin` with a configurable retry mechanism.
 ///
@@ -41,51 +40,105 @@ use std::io::Read;
 ///
 /// # Notes:
 /// - Useful for cases where input may be delayed, such as reading from a file or pipe.
-pub fn input_or_stdin(input: Option<&str>, max_attempts: usize, delay: u64) -> String {
-	// If input is provided, use it directly
-	if let Some(input_str) = input {
-		return input_str.to_string();
-	}
+pub fn input_or_stdin<R: Read>(input: Option<R>, max_attempts: usize, delay: u64) -> String {
+    // If input is provided, read from it
+    if let Some(mut reader) = input {
+        let mut buf = String::new();
+        match reader.read_to_string(&mut buf) {
+            Ok(_) => {
+                return buf.lines()
+                    .map(|line| line.trim())
+                    .collect::<Vec<_>>()
+                    .join("\n");
+            }
+            Err(_) => return String::new(), // Handle any error during reading
+        }
+    }
 
-	// Otherwise, attempt to read from stdin
-	let stdin = io::stdin();
-	let mut handle = stdin.lock();
-	let mut buf = String::new();
+    // Otherwise, read from stdin
+    let stdin = io::stdin();
+    let mut handle = stdin.lock();
+    let mut buf = String::new();
 
-	for attempt in 0..max_attempts {
-		match handle.read_to_string(&mut buf) {
-			Ok(0) => {
-				// No data was read, retry after a delay
-				if attempt == max_attempts - 1 {
-					return String::new();  // Give up after max_attempts
-				}
-				sleep(Duration::from_millis(delay));
-			}
-			Ok(_) => {
-				// Successfully read input, trim and return it
-				let result = buf
-					.lines()                    // Split into lines
-					.map(|line| line.trim())    // Trim each line
-					.map(String::from)          // Convert &str to String
-					.collect::<Vec<_>>()        // Collect into a Vec<String>
-					.join("\n");
+    for attempt in 0..max_attempts {
+        match handle.read_to_string(&mut buf) {
+            Ok(0) => {
+                // No data read, retry after a delay
+                if attempt == max_attempts - 1 {
+                    return String::new();  // Give up after max_attempts
+                }
+                sleep(Duration::from_millis(delay));
+            }
+            Ok(_) => {
+                // Successfully read input, trim and return it
+                let result = buf
+                    .lines()                    // Split into lines
+                    .map(|line| line.trim())    // Trim each line
+                    .map(String::from)          // Convert &str to String
+                    .collect::<Vec<_>>()        // Collect into a Vec<String>
+                    .join("\n");
 
-				return result.to_string();
-			}
-			Err(e) => {
-				// Handle error, retry if it's a WouldBlock error and we have retries left
-				if e.kind() == ErrorKind::WouldBlock && attempt < max_attempts - 1 {
-					sleep(Duration::from_millis(delay));
-				} else {
-					// If not WouldBlock or out of attempts, return empty string
-					return String::new();
-				}
-			}
-		}
-		buf.clear();  // Clear buffer after failed attempt before next retry
-	}
-	
-	// If we exhaust attempts and still have no input, return an empty string
-	String::new()
+                return result.to_string();
+            }
+            Err(_) => {
+                // Error occurred, handle appropriately
+                buf.clear();
+            }
+        }
+    }
+
+    String::new() // Return empty string after all attempts
 }
+
+pub fn str_or_stdin(input: Option<&str>, max_attempts: usize, delay: u64) -> String {
+    input_or_stdin(input.map(|s| Cursor::new(s.as_bytes())), max_attempts, delay)
+}
+
+//pub fn input_or_stdin(input: Option<&str>, max_attempts: usize, delay: u64) -> String {
+//	// If input is provided, use it directly
+//	if let Some(input_str) = input {
+//		return input_str.to_string();
+//	}
+//
+//	// Otherwise, attempt to read from stdin
+//	let stdin = io::stdin();
+//	let mut handle = stdin.lock();
+//	let mut buf = String::new();
+//
+//	for attempt in 0..max_attempts {
+//		match handle.read_to_string(&mut buf) {
+//			Ok(0) => {
+//				// No data was read, retry after a delay
+//				if attempt == max_attempts - 1 {
+//					return String::new();  // Give up after max_attempts
+//				}
+//				sleep(Duration::from_millis(delay));
+//			}
+//			Ok(_) => {
+//				// Successfully read input, trim and return it
+//				let result = buf
+//					.lines()                    // Split into lines
+//					.map(|line| line.trim())    // Trim each line
+//					.map(String::from)          // Convert &str to String
+//					.collect::<Vec<_>>()        // Collect into a Vec<String>
+//					.join("\n");
+//
+//				return result.to_string();
+//			}
+//			Err(e) => {
+//				// Handle error, retry if it's a WouldBlock error and we have retries left
+//				if e.kind() == ErrorKind::WouldBlock && attempt < max_attempts - 1 {
+//					sleep(Duration::from_millis(delay));
+//				} else {
+//					// If not WouldBlock or out of attempts, return empty string
+//					return String::new();
+//				}
+//			}
+//		}
+//		buf.clear();  // Clear buffer after failed attempt before next retry
+//	}
+//	
+//	// If we exhaust attempts and still have no input, return an empty string
+//	String::new()
+//}
 

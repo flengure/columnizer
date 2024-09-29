@@ -1,5 +1,5 @@
 use clap::{Args, ValueEnum};
-use crate::io::input_or_stdin;
+use crate::io::str_or_stdin;
 use std::fmt;
 use std::num::ParseFloatError;
 use std::str::FromStr;
@@ -20,7 +20,7 @@ use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 pub fn clean(input: Option<&str>) -> String {
 
 	// Read data from stdin if input is None
-	let input_data = input_or_stdin(input, 5, 500);
+	let input_data = str_or_stdin(input, 5, 500);
 
 	// Clean the input by trimming lines and removing empty lines
 	let cleaned_lines: Vec<String> = input_data
@@ -52,7 +52,7 @@ pub fn clean(input: Option<&str>) -> String {
 #[allow(dead_code)]
 pub fn right(input: Option<&str>, width: Option<usize>) -> String {
 
-	let input_data = input_or_stdin(input, 5, 500);
+	let input_data = str_or_stdin(input, 5, 500);
 
 	let cleaned = clean(Some(&input_data));
 
@@ -98,7 +98,7 @@ pub fn right(input: Option<&str>, width: Option<usize>) -> String {
 #[allow(dead_code)]
 pub fn left(input: Option<&str>) -> String {
 
-	let input_data = input_or_stdin(input, 5, 500);
+	let input_data = str_or_stdin(input, 5, 500);
 
 	let cleaned = clean(Some(&input_data));
 
@@ -112,7 +112,7 @@ pub fn left(input: Option<&str>) -> String {
 #[allow(dead_code)]
 pub fn wrap(input: Option<&str>, width: usize) -> String {
 
-	let input_data = input_or_stdin(input, 5, 500);
+	let input_data = str_or_stdin(input, 5, 500);
 
 	let cleaned = clean(Some(&input_data));
 
@@ -129,7 +129,7 @@ pub fn wrap(input: Option<&str>, width: usize) -> String {
 #[allow(dead_code)]
 pub fn center(input: Option<&str>, width: Option<usize>) -> String {
 
-	let input_data = input_or_stdin(input, 5, 500);
+	let input_data = str_or_stdin(input, 5, 500);
 
 	let cleaned = clean(Some(&input_data));
 
@@ -184,7 +184,7 @@ pub fn center(input: Option<&str>, width: Option<usize>) -> String {
 #[allow(dead_code)]
 pub fn truncate(input: Option<&str>, width: Option<usize>, no_ellipsis: Option<bool>) -> String {
 
-	let input_data = input_or_stdin(input, 5, 500);
+	let input_data = str_or_stdin(input, 5, 500);
 
 	let cleaned = clean(Some(&input_data));
 
@@ -380,7 +380,7 @@ impl TextFormatter {
 	/// A new `Formatter` with default values for formatting options.
 	pub fn new(input: Option<String>) -> Self {
 
-		let input_data = input_or_stdin(input.as_deref(), 5, 500);
+		let input_data = str_or_stdin(input.as_deref(), 5, 500);
 		let cleaned = clean(Some(&input_data)).clone();
 		
 		Self {
