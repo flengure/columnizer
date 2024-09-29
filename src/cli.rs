@@ -1,6 +1,6 @@
 use clap::{Args, Parser, Subcommand};
 use crate::text::{center, clean, left, right, truncate, wrap, TextFormatter};
-use crate::builder::TableBuilder;
+use crate::table::TableBuilder;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
