@@ -1,4 +1,4 @@
-use clap::ValueEnum;
+use clap::{Args, ValueEnum};
 use crate::format::{ center, clean, left, right, truncate, wrap };
 use crate::io::input_or_stdin;
 use std::fmt;
@@ -72,53 +72,72 @@ impl fmt::Display for Alignment {
 	}
 }
 
-#[allow(dead_code)]
-#[derive(Clone)]
+#[derive(Args, Clone)]
 pub struct Formatter {
-	/// The raw input string that will be formatted according to the specified options.
+	/// Text be formatted according to the specified options
 	pub input: Option<String>,
 
-	/// The maximum width (in characters) allocated for the formatted field.
-	/// This width determines how the input text will be displayed in the output.
+	// The maximum width (in characters) allocated for the formatted field.
+	// This width determines how the input text will be displayed in the output.
+	#[arg(default_value_t = 0)]
+	#[arg(short, long)]
 	pub width: usize,
 
-	/// Specifies the formatting style for the text within the field.
-	/// If set to `Frame::TRUNCATE`, text will be truncated to fit within the field width.
-	/// If set to `Frame::WRAP`, text will be wrapped onto multiple lines if it exceeds the width.
+	// Specifies the formatting style for the text within the field.
+	// If set to `Frame::TRUNCATE`, text will be truncated to fit width.
+	// If set to `Frame::WRAP`, wrapped accross multiple lines to fit width.
+	#[arg(default_value_t = Frame::TRUNCATE)]
+	#[arg(value_enum)]
+	#[arg(short, long)]
 	pub frame: Frame,
 
-	/// Indicates whether to truncate text with an ellipsis ("...") when it exceeds the defined width.
-	/// This is applicable only when `frame` is set to `Frame::TRUNCATE`.
+	// Indicates whether to truncate text with an ellipsis ("...") when it
+	//  exceeds the defined width.
+	// This is applicable only when `frame` is set to `Frame::TRUNCATE`.
+	#[arg(short, long)]
 	pub no_ellipsis: bool,
 
-	/// Determines whether to pad decimal digits with trailing zeros to maintain a consistent appearance.
-	/// If set to true, decimal numbers will display the specified number of digits after the decimal point.
+	// Determines whether to pad decimal digits with trailing zeros to maintain
+	//   consistent appearance. If set to true, decimal numbers will display
+	//   the specified number of digits after the decimal point.
+	#[arg(short, long)]
 	pub pad_decimal_digits: bool,
 
-	/// The maximum number of decimal digits that will be displayed for numeric values.
-	/// This setting helps control the precision of the output for numeric formatting.
+	// The maximum number of decimal digits that will be displayed for numeric values.
+	// This setting helps control the precision of the output for numeric formatting.
+	#[arg(default_value_t = 2)]
+	#[arg(short, long)]
 	pub max_decimal_digits: usize,
 
-	/// The character used as the decimal separator in formatted numeric values.
-	/// This is particularly useful for ensuring compatibility with various regional formats.
+	// The character used as the decimal separator in formatted numeric values.
+	// \nThis is particularly useful for ensuring compatibility with various regional formats.
+	#[arg(default_value_t = '.')]
+	#[arg(short, long)]
 	pub decimal_separator: char,
 
-	/// A flag indicating whether to include a thousand separator in large numeric values.
-	/// If set to true, numbers will be formatted with the specified `thousand_separator`.
+	// A flag indicating whether to include a thousand separator in large numeric values.
+	// If set to true, numbers will be formatted with the specified `thousand_separator`.
+	#[arg(short, long)]
 	pub use_thousand_separator: bool,
 
-	/// The character used as the thousand separator in formatted numeric values.
-	/// This enhances readability by grouping digits in large numbers.
+	// The character used as the thousand separator in formatted numeric values.
+	// \nThis enhances readability by grouping digits in large numbers.
+	#[arg(default_value_t = ',')]
+	#[arg(short, long)]
 	pub thousand_separator: char,
 
-	/// Specifies the alignment of the text within the field.
-	/// - `Alignment::AUTO`: Automatically aligns numeric text to the right.
-	/// - `Alignment::RIGHT`: Forces right alignment for both numeric and non-numeric text.
-	/// - `Alignment::None`: Leaves the text unchanged, preserving its original alignment.
+	// Specifies the alignment of the text within the field.
+	// - `Alignment::AUTO`: Automatically aligns numeric text to the right.
+	// - `Alignment::RIGHT`: Forces right alignment for both numeric and non-numeric text.
+	// - `Alignment::None`: Leaves the text unchanged, preserving its original alignment.
+	#[arg(default_value_t = Alignment::AUTO)]
+	#[arg(value_enum)]
+	#[arg(short, long)]
 	pub alignment: Alignment,
 
 	/// A flag indicating whether the content being formatted is numeric.
 	/// This can influence how certain formatting rules are applied, such as decimal padding.
+	#[arg(hide = true)]
 	pub is_numeric: Option<bool>,
 
 }

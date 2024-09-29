@@ -1,159 +1,160 @@
+use clap::{ Args };
+use crate::format::{ clean };
 use crate::formatter::{ Alignment, Frame };
-use crate::format::clean;
-use prettytable::Table;
+use crate::io::{ input_or_stdin };
+use prettytable::{ Table };
 
 /// Builder for configuring and formatting text into columns.
 ///
 /// This struct allows setting various options to control the formatting of text into columns,
 /// including field separators, header rows, divider lines, and text width.
-#[derive(Clone)]
+#[derive(Args, Clone)]
 pub struct TableBuilder {
 
 	/// The text input to be formatted.
-	pub input: String,
+	pub input: Option<String>,
 
-	/// The string used to separate input fields.
-	///
-	/// This is the delimiter used to split fields in the input data.
-	/// For example, a comma (`,`) might be used to separate CSV fields.
+	/// Input Field Separator
+	#[arg(default_value = " ", long, short)]
 	pub ifs: String,
 
-	/// The string used to separate output fields.
-	///
-	/// This character is inserted between fields in the output data.
-	/// It is useful for formatting the output in a desired way.
-#[allow(dead_code)]
+	/// Output Field Separator
+	#[arg(default_value = " ", long, short)]
 	pub ofs: String,
 
-	/// The index of the row used for headers.
-	///
-	/// This specifies which row in the data is used as the header row.
-	/// Indexing is 1-based, so the first row is `1`.
+	/// Header rows start on this row
+	#[arg(default_value_t = 1, long, short = 'r')]
 	pub header_index: usize,
 
-	/// The number of header rows.
-	///
-	/// This specifies how many rows at the top of the data are considered as headers.
-	/// Useful when multiple rows are used to describe columns.
+	/// Number of header rows.
+	#[arg(default_value_t = 1, long, short = 'c')]
 	pub header_count: usize,
 
-    /// The row in the data that specifies column widths.
-    ///
-    /// This specifies which row contains the column widths. The width values in this
-    /// row can override the global width settings.
+	// will not be included in output, unless as part of headers
+	/// A row specifying maximum column widths
+	#[arg(default_value_t = 0, long, short = 'w')]
     pub column_width_limits_index: usize,
 
-	/// Whether to exclude a divider line between the header and the data.
-	///
-	/// If `true`, no divider line will be drawn between the header and the rest of the data.
-	/// If `false`, a divider line will be added to visually separate the header from the data.
-#[allow(dead_code)]
+	/// Disable divider line between headers and data
+	#[arg(short, long)]
     pub no_divider: bool,
 
-    /// The character used to create a divider line between the header and the data.
-    ///
-    /// This character is repeated to form a divider line separating the header from the data rows.
-#[allow(dead_code)]
+	/// Divider line made of this character
+	#[arg(default_value_t = '-', long, short)]
     pub divider_char: char,
 
-    /// The global maximum allowed width for any cell.
-    ///
-    /// This is the maximum width that any cell can have. If a cell's content
-    /// exceeds this width, it will be truncated or wrapped depending on other settings.
+	/// Maximimu width (display characters) of any cell
+	#[arg(default_value_t = 48)]
+	#[arg(short, long)]
 	pub max_cell_width: usize,
 
-    /// Whether to wrap text or truncate it, leave it alone.
-    ///
-	/// Enum Frame::{TRUNCATE, WRAP, NONE}
+	/// How we frame text 
+	#[arg(default_value_t = Frame::TRUNCATE)]
+	#[arg(value_enum)]
+	#[arg(short, long)]
 	pub frame: Frame,
 
-    /// Whether to use ellipsis when truncating text.
-    ///
-    /// If `true`, an ellipsis (`...`) will be added to the end of truncated text.
-    /// If `false`, text will be cut off without ellipsis.
-#[allow(dead_code)]
+	/// Disable ellipsis for truncated text
+	#[arg(short, long)]
     pub no_ellipsis: bool,
 
-	pub pad_decimal_digits:       bool, // Do we align the decimals padding with 0 at the end if necessary
-	pub max_decimal_digits:      usize, // Limit the number of decimal places
-	pub decimal_separator:        char, // Character to display decimals 0.0, 0,0
-	pub use_thousand_separator:   bool, // Do we add thousands separator in output
+	/// Use decimal precision for numbers
+	#[arg(short, long)]
+	pub pad_decimal_digits: bool,
 
-    /// The separator character for thousands in numeric fields.
-    ///
-    /// This is used by `numfmt` to format numeric values. Common separators are `','` or `'.'`.
+	/// Limit decimal precision for numbers
+	#[arg(default_value_t = 2)]
+	#[arg(short, long)]
+	pub max_decimal_digits: usize,
+
+	/// Decimal point character
+	#[arg(default_value_t = '.')]
+	#[arg(short, long)]
+	pub decimal_separator: char,
+
+	/// Use thousands grouping for numbers
+	#[arg(short, long)]
+	pub use_thousand_separator: bool,
+
+	/// thousands grouping character
+	#[arg(default_value_t = ',')]
+	#[arg(short, long)]
 	pub thousand_separator: char,
 
-    /// Whether align right to width,
-	/// align right based on wether the content is text or numeric, or
-	/// dont align.
-    ///
-	/// Enum Alignment::{AUTO, RIGHT, LEFT}
-#[allow(dead_code)]
+	#[arg(default_value_t = Alignment::AUTO)]
+	#[arg(value_enum)]
+	#[arg(short, long)]
 	pub alignment: Alignment,
 
-	/// These field are computed and cached f
-    /// An instance of `Table` from the `prettytable` crate.
+	/// These field are computed and cached
+	/// An instance of `Table` from the `prettytable` crate.
 	/// to collect and apply final formatting
-#[allow(dead_code)]
+	#[clap(skip)]
 	pub table: Option<Table>,
 
 	/// Column width limits specified in the data row.
 	///
 	/// This contains the column widths as specified in a special row in the data. These widths
 	/// are clamped by global maximum column width col_width_max.
+	#[clap(skip)]
 	pub column_width_limits: Option<Vec<usize>>,
 
     /// Column widths specified in the data row.
     ///
     /// These are final column widths for each column, taking the maximum width for all rows in the column
     /// then limiting it by col_width_limits
+	#[clap(skip)]
     pub header_column_widths: Option<Vec<usize>>,
 
     /// Column widths specified in the data row.
     ///
     /// These are final column widths for each column, taking the maximum width for all rows in the column
     /// then limiting it by col_width_limits
+	#[clap(skip)]
     pub data_column_widths: Option<Vec<usize>>,
 
     /// Column widths specified for both header abd data rows.
     ///
     /// These are final column widths for each column, taking the maximum width for all rows in the column
     /// then limiting it by col_width_limits
+	#[clap(skip)]
     pub column_widths: Option<Vec<usize>>,
 
     /// The header rows cached from the input data.
     ///
     /// extracted from the input, by considering, header_index and header_count
     /// this will store the header rows.
+	#[clap(skip)]
     pub headers: Option<Vec<Vec<String>>>,
 
     /// Cached data rows from the input.
     ///
     /// This stores the rows parsed from the input data after excluding the headers and column width limits.
+	#[clap(skip)]
 	pub data: Option<Vec<Vec<String>>>,
 
     /// Cached status indicating whether each column is numeric.
     ///
     /// This indicates whether each column in the data is numeric (`true`) or text (`false`).
     /// This helps in formatting and alignment.
+	#[clap(skip)]
     pub numeric_columns: Option<Vec<bool>>,
-	pub column_count:    Option<usize>, // number of columns after parsing data
+
+	/// number of columns after parsing data
+	#[clap(skip)]
+	pub column_count:    Option<usize>,
 }
 
+#[allow(dead_code)]
 impl TableBuilder  {
 	/// Creates a new `Builder` with default settings.
-#[allow(dead_code)]
-	pub fn new(input: String) -> Self {
+	pub fn new(input: Option<String>) -> Self {
 
-		let trimmed_input = clean(Some(&input));
-//		let trimmed_input = clean(Some(&input)).unwrap_or_else(|error| {
-//			eprintln!("Error: {}", error);
-//			String::new()
-//		});
+		let input_data = input_or_stdin(input.as_deref(), 5, 500);
+		let cleaned = clean(Some(&input_data)).clone();
 
 		Self {
-			input:      trimmed_input.clone(), // Sanitized input trim_and_strip_blank_lines
+			input:              Some(cleaned), // Sanitized input trim_and_strip_blank_lines
 			ifs:              " ".to_string(), // Default input field separator
 			ofs:              " ".to_string(), // Default output field separator
 			header_index:                   1, // Default header at row 1

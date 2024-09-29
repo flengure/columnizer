@@ -1,7 +1,4 @@
-pub use crate::rows::{
-	CellFormatter,
-	Alignment,
-};
+pub use crate::rows::{ CellFormatter, Alignment };
 use crate::builder::TableBuilder;
 pub use prettytable::Cell;
 pub use prettytable::format;
@@ -10,7 +7,7 @@ pub use prettytable::Table;
 
 #[allow(dead_code)]
 impl TableBuilder {
-	pub fn table(&mut self) -> &Table {
+	pub fn build(&mut self) -> &Table {
 		// retun cached table if available
 		if let Some(ref table) = self.table {
 			return table;

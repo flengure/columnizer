@@ -36,7 +36,7 @@ impl TableBuilder {
 		}
 
 		self.column_count = Some(
-			self.input.lines()
+			self.input.clone().expect("REASON").lines()
 				.map(|line| line.split(&self.ifs).count())
 				.max()
 				.unwrap_or(0)
@@ -66,7 +66,7 @@ impl TableBuilder {
 		}
 
 		self.column_width_limits = Some(if self.column_width_limits_index > 0 {
-			self.input.lines()
+			self.input.clone().expect("REASON").lines()
 				.nth(self.column_width_limits_index)
 				.map(|line| {
 					line.split(&self.ifs)
@@ -215,7 +215,7 @@ impl TableBuilder {
 			// Initialize the column widths vector
 
 			// Iterate over the specified header lines
-			self.input.lines()
+			self.input.clone().expect("REASON").lines()
 				.skip(self.header_index - 1)
 				.take(self.header_count)
 				.map(|line| {
@@ -285,7 +285,7 @@ impl TableBuilder {
 		let mut numeric_columns = self.numeric_columns().clone();
 
 		// Collect all rows that are not headers and not the column_width_limits_index row
-		self.data = Some(self.input.lines()
+		self.data = Some(self.input.clone().expect("REASON").lines()
 			.enumerate()
 			.filter_map(|(i, line)| {
 				// Skip header rows and the column width limits row
