@@ -1,4 +1,4 @@
-//mod cli;
-//mod io;
-//mod table;
-//mod text;
+mod cli;
+mod io;
+mod table;
+mod text;
