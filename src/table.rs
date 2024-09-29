@@ -36,26 +36,23 @@ pub struct TableBuilder {
     pub column_width_limits_index: usize,
 
 	/// Disable divider line between headers and data
-	#[arg(short, long)]
+	#[arg(long, short = 'D')]
     pub no_divider: bool,
 
 	/// Divider line made of this character
-	#[arg(default_value_t = '-', long, short)]
+	#[arg(default_value_t = '-', long, short = 'd')]
     pub divider_char: char,
 
 	/// Maximimu width (display characters) of any cell
-	#[arg(default_value_t = 48)]
-	#[arg(short, long)]
+	#[arg(default_value_t = 48, long, short = 'M')]
 	pub max_cell_width: usize,
 
 	/// How we frame text 
-	#[arg(default_value_t = Frame::TRUNCATE)]
-	#[arg(value_enum)]
-	#[arg(short, long)]
+	#[arg(value_enum, default_value_t = Frame::TRUNCATE, long, short)]
 	pub frame: Frame,
 
 	/// Disable ellipsis for truncated text
-	#[arg(short, long)]
+	#[arg(long, short = 'E')]
     pub no_ellipsis: bool,
 
 	/// Use decimal precision for numbers
@@ -63,13 +60,11 @@ pub struct TableBuilder {
 	pub pad_decimal_digits: bool,
 
 	/// Limit decimal precision for numbers
-	#[arg(default_value_t = 2)]
-	#[arg(short, long)]
+	#[arg(default_value_t = 2, long, short = 'm')]
 	pub max_decimal_digits: usize,
 
 	/// Decimal point character
-	#[arg(default_value_t = '.')]
-	#[arg(short, long)]
+	#[arg(default_value_t = '.', long, short = 's')]
 	pub decimal_separator: char,
 
 	/// Use thousands grouping for numbers
@@ -709,9 +704,9 @@ impl TableBuilder {
 
 #[allow(dead_code)]
 impl TableBuilder {
-	pub fn build(&mut self) -> &Table {
+	pub fn build(&mut self) -> &mut Table {
 		// retun cached table if available
-		if let Some(ref table) = self.table {
+		if let Some(ref mut table) = self.table {
 			return table;
 		}
 
@@ -840,12 +835,11 @@ impl TableBuilder {
 			}
 		}
 
+        // Cache the table
+        self.table = Some(table);
 
-        // Cache the table if required
-        self.table = Some(table.clone());
-
-        // Return a reference to the table
-        self.table.as_ref().unwrap()
+        // Return a mutable reference to the cached table
+        self.table.as_mut().unwrap()
 
 	}
 }

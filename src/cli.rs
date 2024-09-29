@@ -133,7 +133,9 @@ pub fn run_cli(cli: &Cli) {
 				.clone();
 
 			let formatted_table = table.build();
-			println!("{}", formatted_table);
+			formatted_table.printstd();
+//			println!("{}", formatted_table);
+//			println!("{}", table);
 		},
 	}
 }
