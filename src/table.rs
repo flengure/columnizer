@@ -1,5 +1,5 @@
 use clap::{ Args };
-use crate::io::{ str_or_stdin };
+use crate::io::{ unwrap_or_stdin };
 use crate::text::{ TextFormatter, Alignment, Frame, clean };
 pub use prettytable::{format, Cell, Row, Table};
 use unicode_width::UnicodeWidthStr;
@@ -140,16 +140,11 @@ pub struct TableBuilder {
 	pub column_count:    Option<usize>,
 }
 
-#[allow(dead_code)]
-impl TableBuilder  {
-	/// Creates a new `Builder` with default settings.
-	pub fn new(input: Option<String>) -> Self {
-
-		let input_data = str_or_stdin(input.as_deref(), 5, 500);
-		let cleaned = clean(Some(&input_data)).clone();
-
-		Self {
-			input:              Some(cleaned), // Sanitized input trim_and_strip_blank_lines
+impl Default for TableBuilder  {
+	/// Creates a new `TableBuilder` with default settings.
+	fn default() -> Self {
+		TableBuilder {
+			input:                       None, // No input
 			ifs:              " ".to_string(), // Default input field separator
 			ofs:              " ".to_string(), // Default output field separator
 			header_index:                   1, // Default header at row 1
@@ -179,8 +174,26 @@ impl TableBuilder  {
 	}
 }
 
-#[allow(dead_code)]
-impl TableBuilder  {
+impl TableBuilder {
+	/// Creates a new `Builder` with default settings.
+	pub fn new(input: Option<String>) -> Self {
+
+		// Initialize a default instance of TableBuilder
+		let mut builder = TableBuilder::default();
+
+		// Attempt to read input, falling back to stdin
+		let input_data = match unwrap_or_stdin(input, 5, 500) {
+			Ok(content) => content,
+			Err(e) => {
+				eprintln!("Error: {}", e);
+				return builder; // Return the default instance on error
+			}
+		};
+
+		// Clean and set the input field
+		builder.input = Some(clean(Some(&input_data)));
+		builder // Return the modified builder
+	}
 
 	pub fn set_ifs(&mut self, ifs: String) -> &mut Self {
 		self.ifs = ifs;
@@ -286,7 +299,6 @@ impl TableBuilder  {
 
 }
 
-#[allow(dead_code)]
 impl TableBuilder {
 
 	/// Determines and returns the number of columns in the input data.
@@ -702,7 +714,6 @@ impl TableBuilder {
 
 }
 
-#[allow(dead_code)]
 impl TableBuilder {
 	pub fn build(&mut self) -> &mut Table {
 		// retun cached table if available
