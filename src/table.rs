@@ -605,7 +605,7 @@ impl TableBuilder {
 							.set_use_thousand_separator(self.use_thousand_separator)
 							.clone();
 
-						let formatted = formatter.formatted();
+						let formatted = formatter.text();
 
 						// Update column width for this cell
 						let width = &formatted.trim().width();
@@ -758,11 +758,13 @@ impl TableBuilder {
 						.set_no_ellipsis(self.no_ellipsis)
 						.clone();
 
+					let formatted = formatter.text();
+
 					// Prepend self.ofs to the cell, except for the first cell
 					let cell_content = if i > 0 {
-						format!("{}{}", self.ofs, formatter.formatted())
+						format!("{}{}", self.ofs, formatted)
 					} else {
-						formatter.formatted()
+						formatted
 					};
 
 					let formatted_cell = Cell::new_align(&cell_content, pt_alignment);
@@ -828,11 +830,13 @@ impl TableBuilder {
 						.set_thousand_separator(self.thousand_separator)
 						.clone();
 
+					let formatted = formatter.text();
+
 					// Prepend self.ofs to the cell, except for the first cell
 					let cell_content = if i > 0 {
-						format!("{}{}", self.ofs, formatter.formatted())
+						format!("{}{}", self.ofs, formatted)
 					} else {
-						formatter.formatted()
+						formatted
 					};
 
 					let formatted_cell = Cell::new_align(&cell_content, pt_alignment);

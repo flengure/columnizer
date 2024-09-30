@@ -7,11 +7,11 @@ use crate::table::TableBuilder;
 #[command(propagate_version = true)]
 pub struct Cli {
 	#[command(subcommand)]
-	pub command: Formats,
+	pub command: FmtCommands,
 }
 
 #[derive(Subcommand)]
-pub enum Formats {
+pub enum FmtCommands {
 	/// Sanitizes the input text by removing leading and trailing blank lines and whitespace
 	Clean(CleanCli),
 	/// Aligns to the right, padding with spaces up to width
@@ -28,6 +28,28 @@ pub enum Formats {
 	Text(TextFormatter),
 	/// Formats table based on certain parameters
 	Table(TableBuilder),
+    /// Checks if the format is numeric or hex
+	#[command(subcommand)]
+    Is(IsSubcommand),
+
+}
+
+#[derive(Subcommand)]
+pub enum IsSubcommand {
+    /// Checks if the format is hex
+    Hex(HexCli),
+    /// Checks if the format is numeric
+    Numeric(NumericCli),
+}
+
+#[derive(Args)]
+pub struct HexCli {
+	pub text: Option<String>,
+}
+
+#[derive(Args)]
+pub struct NumericCli {
+	pub text: Option<String>,
 }
 
 #[derive(Args)]
@@ -81,29 +103,46 @@ pub struct TruncateCli {
 pub fn run_cli(cli: &Cli) {
 
 	match &cli.command {
-		Formats::Center(input) => {
-			println!("{}", center(input.text.as_deref(), input.width));
-		},
-		Formats::Clean(input) => {
-			println!("{}", clean(input.text.as_deref()));
-		},
-		Formats::Left(input) => {
-			println!("{}", left(input.text.as_deref()));
-		},
-		Formats::Right(input) => {
-			println!("{}", right(input.text.as_deref(), input.width));
-		},
-		Formats::Truncate(input) => { println!("{}", truncate(
+        FmtCommands::Is(is_cmd) => {
+            // Handle the subcommands under `fmt is`
+            match is_cmd {
+                IsSubcommand::Hex(_) => {
+                    // Add logic for handling hex checks
+                    println!("Checking if the format is hex");
+                    // You can add actual logic for hex check here
+                },
+                IsSubcommand::Numeric(_) => {
+                    // Add logic for handling numeric checks
+                    println!("Checking if the format is numeric");
+                    // You can add actual logic for numeric check here
+                },
+            }
+        },
+		FmtCommands::Center(input) => { println!("{}", center(
+			input.text.as_deref(),
+			input.width,
+		)); },
+		FmtCommands::Clean(input) => { println!("{}", clean(
+			input.text.as_deref()
+		)); },
+		FmtCommands::Left(input) => { println!("{}", left(
+			input.text.as_deref()
+		)); },
+		FmtCommands::Right(input) => { println!("{}", right(
+			input.text.as_deref(),
+			input.width
+		)); },
+		FmtCommands::Truncate(input) => { println!("{}", truncate(
 			input.text.as_deref(), 
 			input.width, 
 			input.no_ellipsis,
 			input.frame,
 		)); },
-		Formats::Wrap(input) => { println!("{}", wrap(
+		FmtCommands::Wrap(input) => { println!("{}", wrap(
 			input.text.as_deref(),
 			input.width
 		)); },
-		Formats::Text(input) => { println!("{}", text(
+		FmtCommands::Text(input) => { println!("{}", text(
 			input.text.as_deref(), 
 			Some(input.width),
 			Some(input.frame),
@@ -115,7 +154,7 @@ pub fn run_cli(cli: &Cli) {
 			Some(input.thousand_separator),
 			Some(input.alignment),
 		)); }
-		Formats::Table(input) => {
+		FmtCommands::Table(input) => {
 			let mut table = TableBuilder::new(input.input.clone())
 				.set_ifs(input.ifs.clone())
 				.set_ofs(input.ofs.clone())
