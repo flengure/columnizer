@@ -1,6 +1,6 @@
 # FMT
 
-`fmt` is a command-line utility for formatting text and tables. It offers various formatting options such as cleaning input text, aligning text, wrapping text to specified widths, truncating text, and checking if text is numeric or hexadecimal. 
+`fmt` is a command-line utility for formatting text and tables. It offers various formatting options such as cleaning input text, aligning text, wrapping text to specified widths, truncating text, checking if text is numeric or hexadecimal, and formatting tables.
 
 ## Features
 
@@ -9,6 +9,7 @@
 - **Text Wrapping**: Wrap text to a specified width.
 - **Text Truncation**: Truncate text to a specified width.
 - **Numeric and Hexadecimal Checking**: Verify if the input text is a valid numeric or hexadecimal string.
+- **Table Formatting**: Format tabular data into a well-structured table.
 
 ## Installation
 
@@ -75,6 +76,11 @@ fmt <subcommand> [options]
   fmt is numeric --text "12345"
   ```
 
+- **Table Format**: Formats tabular data into a structured table.
+  ```bash
+  fmt table --text "Header1, Header2, Header3\nRow1Col1, Row1Col2, Row1Col3\nRow2Col1, Row2Col2, Row2Col3"
+  ```
+
 ## Examples
 
 ### Clean Text
@@ -90,6 +96,11 @@ fmt right --text "Hello" --width 10
 ### Check if Hex
 ```bash
 fmt is hex --text "A0B1C2"
+```
+
+### Format a Table
+```bash
+fmt table --text "Name, Age, City\nAlice, 30, New York\nBob, 25, Los Angeles"
 ```
 
 ## Contributing
