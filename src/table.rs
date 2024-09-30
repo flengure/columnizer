@@ -33,15 +33,15 @@ pub struct TableBuilder {
 	// will not be included in output, unless as part of headers
 	/// A row specifying maximum column widths
 	#[arg(default_value_t = 0, long, short = 'w')]
-    pub column_width_limits_index: usize,
+	pub column_width_limits_index: usize,
 
 	/// Disable divider line between headers and data
 	#[arg(long, short = 'D')]
-    pub no_divider: bool,
+	pub no_divider: bool,
 
 	/// Divider line made of this character
 	#[arg(default_value_t = '-', long, short = 'd')]
-    pub divider_char: char,
+	pub divider_char: char,
 
 	/// Maximimu width (display characters) of any cell
 	#[arg(default_value_t = 48, long, short = 'M')]
@@ -53,7 +53,7 @@ pub struct TableBuilder {
 
 	/// Disable ellipsis for truncated text
 	#[arg(long, short = 'E')]
-    pub no_ellipsis: bool,
+	pub no_ellipsis: bool,
 
 	/// Use decimal precision for numbers
 	#[arg(short, long)]
@@ -94,82 +94,82 @@ pub struct TableBuilder {
 	#[clap(skip)]
 	pub column_width_limits: Option<Vec<usize>>,
 
-    /// Column widths specified in the data row.
-    ///
-    /// These are final column widths for each column, taking the maximum width for all rows in the column
-    /// then limiting it by col_width_limits
+	/// Column widths specified in the data row.
+	///
+	/// These are final column widths for each column, taking the maximum width for all rows in the column
+	/// then limiting it by col_width_limits
 	#[clap(skip)]
-    pub header_column_widths: Option<Vec<usize>>,
+	pub header_column_widths: Option<Vec<usize>>,
 
-    /// Column widths specified in the data row.
-    ///
-    /// These are final column widths for each column, taking the maximum width for all rows in the column
-    /// then limiting it by col_width_limits
+	/// Column widths specified in the data row.
+	///
+	/// These are final column widths for each column, taking the maximum width for all rows in the column
+	/// then limiting it by col_width_limits
 	#[clap(skip)]
-    pub data_column_widths: Option<Vec<usize>>,
+	pub data_column_widths: Option<Vec<usize>>,
 
-    /// Column widths specified for both header abd data rows.
-    ///
-    /// These are final column widths for each column, taking the maximum width for all rows in the column
-    /// then limiting it by col_width_limits
+	/// Column widths specified for both header abd data rows.
+	///
+	/// These are final column widths for each column, taking the maximum width for all rows in the column
+	/// then limiting it by col_width_limits
 	#[clap(skip)]
-    pub column_widths: Option<Vec<usize>>,
+	pub column_widths: Option<Vec<usize>>,
 
-    /// The header rows cached from the input data.
-    ///
-    /// extracted from the input, by considering, header_index and header_count
-    /// this will store the header rows.
+	/// The header rows cached from the input data.
+	///
+	/// extracted from the input, by considering, header_index and header_count
+	/// this will store the header rows.
 	#[clap(skip)]
-    pub headers: Option<Vec<Vec<String>>>,
+	pub headers: Option<Vec<Vec<String>>>,
 
-    /// Cached data rows from the input.
-    ///
-    /// This stores the rows parsed from the input data after excluding the headers and column width limits.
+	/// Cached data rows from the input.
+	///
+	/// This stores the rows parsed from the input data after excluding the headers and column width limits.
 	#[clap(skip)]
 	pub data: Option<Vec<Vec<String>>>,
 
-    /// Cached status indicating whether each column is numeric.
-    ///
-    /// This indicates whether each column in the data is numeric (`true`) or text (`false`).
-    /// This helps in formatting and alignment.
+	/// Cached status indicating whether each column is numeric.
+	///
+	/// This indicates whether each column in the data is numeric (`true`) or text (`false`).
+	/// This helps in formatting and alignment.
 	#[clap(skip)]
-    pub numeric_columns: Option<Vec<bool>>,
+	pub numeric_columns: Option<Vec<bool>>,
 
 	/// number of columns after parsing data
 	#[clap(skip)]
-	pub column_count:    Option<usize>,
+	pub column_count:	Option<usize>,
 }
 
 impl Default for TableBuilder  {
 	/// Creates a new `TableBuilder` with default settings.
 	fn default() -> Self {
 		TableBuilder {
-			input:                       None, // No input
-			ifs:              " ".to_string(), // Default input field separator
-			ofs:              " ".to_string(), // Default output field separator
-			header_index:                   1, // Default header at row 1
-			header_count:                   1, // Default 1 header row
-            column_width_limits_index:      0, // Default no column width row
-			no_divider:                 false, // Default add a divider between header & data
-			divider_char:                 '-', // Default divider mad of -
-			max_cell_width:                80, // Default maximum cell width
-			frame:            Frame::TRUNCATE, // Default truncate text
-			no_ellipsis:                false, // Default no ellipsis on truncate
-			pad_decimal_digits:         false, // Default dont pad decimal digits
-			max_decimal_digits:             2, // Default maximum decimal digits
-			decimal_separator:            '.', // Default decimal separator
-			use_thousand_separator:     false, // Default don't add thousand separator
-			thousand_separator:           ',', // Default thousand seperator char ,
-			alignment:        Alignment::AUTO, // Default align numeric columns to the right
-			table:                       None, // Unknown prettytable
-            column_width_limits:         None, // Unknown column width limits
-			header_column_widths:        None, // Unknown header column widths
-			data_column_widths:          None, // Unknown data column widths
-			column_widths:               None, // Unknown column widths
-			headers:                     None, // Unknown header rows
-			data:                        None, // Unknown data rows
-			numeric_columns:             None, // Unknown numeric columns
-			column_count:                None, // Unknown column count
+			input:                    None, // No input
+			ifs:           " ".to_string(), // Default input field separator
+			ofs:           " ".to_string(), // Default output field separator
+			header_index:                1, // Default header at row 1
+			header_count:                1, // Default 1 header row
+			column_width_limits_index:   0, // Default no column width row
+			no_divider:              false, // Default add a divider between header & data
+			divider_char:              '-', // Default divider mad of -
+			max_cell_width:             80, // Default maximum cell width
+			frame:         Frame::TRUNCATE, // Default truncate text
+			no_ellipsis:             false, // Default no ellipsis on truncate
+			pad_decimal_digits:      false, // Default dont pad decimal digits
+			max_decimal_digits:          2, // Default maximum decimal digits
+			decimal_separator:         '.', // Default decimal separator
+			use_thousand_separator:  false, // Default don't add thousand separator
+			thousand_separator:		   ',', // Default thousand seperator char ,
+			alignment:     Alignment::AUTO, // Default align numeric columns to the right
+			table:                    None, // Unknown prettytable
+			column_width_limits:      None, // Unknown column width limits
+			header_column_widths:     None, // Unknown header column widths
+			data_column_widths:       None, // Unknown data column widths
+			column_widths:            None, // Unknown column widths
+			headers:                  None, // Unknown header rows
+			data:                     None, // Unknown data rows
+			numeric_columns:          None, // Unknown numeric columns
+			column_count:             None, // Unknown column count
 		}
 	}
 }
