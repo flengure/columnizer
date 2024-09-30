@@ -18,3 +18,84 @@ To install `fmt`, clone the repository and build the project using Cargo:
 git clone https://github.com/yourusername/fmt.git
 cd fmt
 cargo build --release
+```
+
+Alternatively, you can add it to your Cargo.toml:
+
+```toml
+[dependencies]
+fmt = { git = "https://github.com/yourusername/fmt.git" }
+```
+
+## Usage
+
+### Command Structure
+
+The basic command structure for using `fmt` is:
+
+```bash
+fmt <subcommand> [options]
+```
+
+### Subcommands
+
+- **Clean**: Sanitizes the input text.
+  ```bash
+  fmt clean --text "   Your text here   "
+  ```
+
+- **Align Right**: Aligns text to the right.
+  ```bash
+  fmt right --text "Align this text" --width 20
+  ```
+
+- **Align Left**: Aligns text to the left.
+  ```bash
+  fmt left --text "Align this text" --width 20
+  ```
+
+- **Center**: Centers text according to specified width.
+  ```bash
+  fmt center --text "Center this text" --width 20
+  ```
+
+- **Wrap**: Wraps text to a specified width.
+  ```bash
+  fmt wrap --text "This is a long text that needs to be wrapped." --width 30
+  ```
+
+- **Truncate**: Truncates text to a specified width.
+  ```bash
+  fmt truncate --text "This text will be truncated." --width 20
+  ```
+
+- **Format Check**: Check if the format is numeric or hexadecimal.
+  ```bash
+  fmt is hex --text "1A3F"
+  fmt is numeric --text "12345"
+  ```
+
+## Examples
+
+### Clean Text
+```bash
+fmt clean --text "   Hello, World!   "
+```
+
+### Align Right
+```bash
+fmt right --text "Hello" --width 10
+```
+
+### Check if Hex
+```bash
+fmt is hex --text "A0B1C2"
+```
+
+## Contributing
+
+Contributions are welcome! Please open an issue or submit a pull request for any enhancements or bug fixes.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
