@@ -28,18 +28,17 @@ pub enum FmtCommands {
 	Text(TextFormatter),
 	/// Formats table based on certain parameters
 	Table(TableBuilder),
-    /// Checks if the format is numeric or hex
+	/// Checks if the format is numeric or hex
 	#[command(subcommand)]
-    Is(IsSubcommand),
-
+	Is(IsSubcommand),
 }
 
 #[derive(Subcommand)]
 pub enum IsSubcommand {
-    /// Checks if the format is hex
-    Hex(HexCli),
-    /// Checks if the format is numeric
-    Numeric(NumericCli),
+	/// Checks if the format is hex
+	Hex(HexCli),
+	/// Checks if the format is numeric
+	Numeric(NumericCli),
 }
 
 #[derive(Args)]
@@ -103,21 +102,19 @@ pub struct TruncateCli {
 pub fn run_cli(cli: &Cli) {
 
 	match &cli.command {
-        FmtCommands::Is(is_cmd) => {
-            // Handle the subcommands under `fmt is`
-            match is_cmd {
-                IsSubcommand::Hex(_) => {
-                    // Add logic for handling hex checks
-                    println!("Checking if the format is hex");
-                    // You can add actual logic for hex check here
-                },
-                IsSubcommand::Numeric(_) => {
-                    // Add logic for handling numeric checks
-                    println!("Checking if the format is numeric");
-                    // You can add actual logic for numeric check here
-                },
-            }
-        },
+		FmtCommands::Is(is_cmd) => {
+			// Handle the subcommands under `fmt is`
+			match is_cmd {
+				IsSubcommand::Hex(input) => {
+					let formatter = TextFormatter::new(input.text.clone());
+					println!("{}", formatter.is_hex());
+				},
+				IsSubcommand::Numeric(input) => {
+					let mut formatter = TextFormatter::new(input.text.clone());
+					println!("{}", formatter.is_numeric());
+				},
+			}
+		},
 		FmtCommands::Center(input) => { println!("{}", center(
 			input.text.as_deref(),
 			input.width,

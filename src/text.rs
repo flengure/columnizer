@@ -475,17 +475,13 @@ impl TextFormatter {
 		self.is_numeric.unwrap()
 	}
 
-	pub fn is_hex(&self) -> Result<String, String> {
-		// First, check if the text exists (unwrap or handle None case)
+	pub fn is_hex(&self) -> bool {
+		// Check if the text exists
 		if let Some(ref text) = self.text {
-			// Now check if all characters are valid hexadecimal digits
-			if text.chars().all(|c| c.is_ascii_hexdigit()) {
-				Ok(text.to_string()) // Return Ok if it's a valid hex string
-			} else {
-				Err(format!("'{}' is not a valid hex string", text)) // Return Err if not valid
-			}
+			// Check if all characters are valid hexadecimal digits
+			text.chars().all(|c| c.is_ascii_hexdigit())
 		} else {
-			Err("No text provided".to_string()) // Handle case when text is None
+			false // Return false if text is None
 		}
 	}
 
