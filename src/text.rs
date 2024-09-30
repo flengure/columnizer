@@ -6,289 +6,218 @@ use std::str::FromStr;
 use textwrap;
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
-/// Cleans the input by trimming whitespace and removing empty lines.
+/// Cleans the provided text by trimming whitespace and removing empty lines.
 ///
-/// This function reads input data either from the provided option or from stdin.
-/// After reading, it trims whitespace from each line and filters out any empty lines.
-///
-/// # Parameters
-/// - `input`: An optional string input. If `None`, it reads from stdin.
-///
-/// # Returns
-/// A `String` containing the cleaned input data, with leading/trailing whitespace 
-/// removed from each line and empty lines filtered out.
-pub fn clean(input: Option<&str>) -> String {
-
-	// Read data from stdin if input is None
-	let input_data = match unwrap_or_stdin(input, 5, 500) {
-		Ok(content) => content,
-		Err(e) => {
-			eprintln!("Error: {}", e);
-			String::new()
-		}
-	};
-
-	// Clean the input by trimming lines and removing empty lines
-	let cleaned_lines: Vec<String> = input_data
-		.lines()
-		.map(|line| line.trim().to_string()) // Trim each line
-		.filter(|line| !line.is_empty())	 // Filter out empty lines
-		.collect();
-
-	// If there are no cleaned lines, return an empty string
-	if cleaned_lines.is_empty() {
-		return String::new();
-	}
-
-	// Join the cleaned lines with newline characters
-	cleaned_lines.join("\n")
-}
-
-/// Right-aligns the lines in the input string to the specified width.
+/// This function takes an optional string slice (`Option<&str>`), converts it
+/// to an `Option<String>`, and uses the `TextFormatter` struct to perform
+/// the cleaning process. If the input is `None`, it returns an empty string.
 ///
 /// # Arguments
 ///
-/// * `input` - A string slice containing the lines to be right-aligned.
+/// * `text` - An optional string slice containing the text to be cleaned. 
+///   If `None`, the function will return an empty string.
+///
+/// # Returns
+///
+/// * A `String` containing the cleaned text. If the input is `None` or if
+///   all lines are empty after cleaning, it returns an empty string.
+///
+/// # Example
+///
+/// ```
+/// let cleaned_text = clean(Some("  line1  \n\n  line2  \n  ")); // Returns "line1\nline2"
+/// let empty_text = clean(None); // Returns ""
+/// ```
+pub fn clean(text: Option<&str>) -> String {
+    let text_string = text.map(|s| s.to_string());       // Convert Option<&str> to Option<String>
+    let mut formatter = TextFormatter::new(text_string); // Pass the Option<String>
+    formatter.clean()                                    // Mutably clean the text
+}
+
+/// Right-aligns the lines in the text string to the specified width.
+///
+/// # Arguments
+///
+/// * `text` - A string slice containing the lines to be right-aligned.
 /// * `width` - An optional width to which the lines should be aligned. If `None` or less than or equal to zero,
 ///			 the width of the longest line will be used.
 ///
 /// # Returns
 ///
 /// A `String` with each line right-aligned to the specified width or to the maximum line width if no width is provided.
-#[allow(dead_code)]
-pub fn right(input: Option<&str>, width: Option<usize>) -> String {
-
-	// Read data from stdin if input is None
-	let input_data = match unwrap_or_stdin(input, 5, 500) {
-		Ok(content) => content,
-		Err(e) => {
-			eprintln!("Error: {}", e);
-			String::new()
-		}
-	};
-
-	let cleaned = clean(Some(&input_data));
-
-	// Split the input into lines
-	let lines: Vec<&str> = cleaned.lines().collect();
-	
-	// Calculate the maximum width of the lines
-	let max_line_width = lines.iter()
-		.map(|line| line.width())
-		.max()
-		.unwrap_or(0); // Fallback to 0 if there are no lines
-
-	// Determine the effective width to use
-	let effective_width = match width {
-		Some(w) if w > 0 => std::cmp::max(w, max_line_width),
-		_ => max_line_width,
-	};
-
-	// Ensure effective_width is positive; if max_line_width is 0, use 1 to avoid formatting issues
-	let effective_width = if effective_width == 0 { 1 } else { effective_width };
-
-	// Iterate through each line and right-align it
-	let aligned_lines: Vec<String> = lines
-		.iter()
-		.map(|line| {
-			let line_width = line.width(); // Get the width of the current line
-			if line_width < effective_width {
-				// Right-align with padding if line is shorter than the effective width
-				format!("{:>width$}", line, width = effective_width)
-			} else {
-				// No alignment needed if the line is already wider than or equal to the effective width
-				line.to_string()
-			}
-		})
-		.collect();
-
-	// Join the aligned lines into a single output string
-	let joined_lines = aligned_lines.join("\n");
-	
-	joined_lines
+pub fn right(text: Option<&str>, width: Option<usize>) -> String {
+    let text_string = text.map(|s| s.to_string());        // Convert Option<&str> to Option<String>
+    let mut formatter = TextFormatter::new(text_string);  // Pass the Option<String>
+    if let Some(w) = width { formatter.set_width(w); }    // Set the width, only if it is provided
+    formatter.right()                                     // Return the formatted right-aligned text
 }
 
-#[allow(dead_code)]
-pub fn left(input: Option<&str>) -> String {
-
-	// Read data from stdin if input is None
-	let input_data = match unwrap_or_stdin(input, 5, 500) {
-		Ok(content) => content,
-		Err(e) => {
-			eprintln!("Error: {}", e);
-			String::new()
-		}
-	};
-
-	let cleaned = clean(Some(&input_data));
-
-	let aligned_lines: Vec<String> = cleaned
-		.lines()
-		.map(String::from)
-		.collect();
-
-	aligned_lines.join("\n")
-}
-#[allow(dead_code)]
-pub fn wrap(input: Option<&str>, width: usize) -> String {
-
-	// Read data from stdin if input is None
-	let input_data = match unwrap_or_stdin(input, 5, 500) {
-		Ok(content) => content,
-		Err(e) => {
-			eprintln!("Error: {}", e);
-			String::new()
-		}
-	};
-
-	let cleaned = clean(Some(&input_data));
-
-	let wrapped = textwrap::wrap(&cleaned, width);
-    // Convert Vec<Cow<'_, str>> to String by joining the wrapped lines with newlines
-    wrapped
-        .into_iter()
-        .map(|line| line.to_string())
-        .collect::<Vec<_>>()
-        .join("\n")
-
-}
-
-#[allow(dead_code)]
-pub fn center(input: Option<&str>, width: Option<usize>) -> String {
-
-	// Read data from stdin if input is None
-	let input_data = match unwrap_or_stdin(input, 5, 500) {
-		Ok(content) => content,
-		Err(e) => {
-			eprintln!("Error: {}", e);
-			String::new()
-		}
-	};
-
-	let cleaned = clean(Some(&input_data));
-
-	// Split the input into lines
-	let lines: Vec<&str> = cleaned.lines().collect();
-
-	// Calculate the maximum width of the lines
-	let max_line_width = lines.iter()
-		.map(|line| line.width())
-		.max()
-		.unwrap_or(0); // Fallback to 0 if there are no lines
-
-	// Determine the effective width to use
-	let effective_width = match width {
-		Some(w) if w > 0 => std::cmp::max(w, max_line_width),
-		_ => max_line_width,
-	};
-
-    // Center each line based on the effective width
-    let centered_lines: Vec<String> = lines.iter().map(|line| {
-        // Calculate the total padding needed for the current line
-        let total_padding = if effective_width > line.width() {
-            effective_width - line.width()
-        } else {
-            0 // No padding needed if the line is wider than or equal to the width
-        };
-
-        // Calculate left and right padding
-        let left_padding = total_padding / 2;
-        let right_padding = total_padding - left_padding;
-
-        // Create the centered line with the appropriate padding
-        format!("{}{}{}", " ".repeat(left_padding), line, " ".repeat(right_padding))
-    }).collect();
-
-    // Join the centered lines into a single output string
-    centered_lines.join("\n")
-
-}
-
-/// Truncates each line in the input string to the specified width and optionally adds ellipses.
+/// Formats the given text as left-aligned.
 ///
-/// # Arguments
-///
-/// * `input` - A string slice containing the lines to be truncated.
-/// * `width` - The maximum width to which each line should be truncated.
-/// * `no_ellipsis` - An optional boolean indicating whether to add ellipses (`...`) to truncated lines. If `None` or `false`, ellipses will be added.
+/// # Parameters
+/// - `text`: An optional string slice that contains the text to be formatted.
+/// If `None` is provided, the function returns an empty string.
 ///
 /// # Returns
+/// A `String` containing the left-aligned formatted text.
+pub fn left(text: Option<&str>) -> String {
+    let text_string = text.map(|s| s.to_string());      // Convert Option<&str> to Option<String>
+    let mut formatter = TextFormatter::new(text_string);    // Pass the Option<String>
+    formatter.left()                                    // Return the formatted left-aligned text
+}
+
+/// Wraps the given text to the specified width.
 ///
-/// A `String` with each line truncated to the specified width, optionally followed by ellipses if the line was truncated.
-#[allow(dead_code)]
-pub fn truncate(input: Option<&str>, width: Option<usize>, no_ellipsis: Option<bool>) -> String {
+/// # Parameters
+/// - `text`: An optional string slice that contains the text to be wrapped.
+/// If `None` is provided, the function returns an empty string.
+/// - `width`: The maximum width for wrapping the text.
+///
+/// # Returns
+/// A `String` containing the wrapped text at the specified width.
+pub fn wrap(text: Option<&str>, width: Option<usize>) -> String {
+    let text_string = text.map(|s| s.to_string());       // Convert Option<&str> to Option<String>
+    let mut formatter = TextFormatter::new(text_string); // Pass the Option<String>
+    
+    // Set the width, only if it is provided
+    if let Some(w) = width { formatter.set_width(w); }
 
-	// Read data from stdin if input is None
-	let input_data = match unwrap_or_stdin(input, 5, 500) {
-		Ok(content) => content,
-		Err(e) => {
-			eprintln!("Error: {}", e);
-			String::new()
-		}
-	};
+	formatter.wrap()
+}
 
-	let cleaned = clean(Some(&input_data));
+/// Centers the provided text within the specified width.
+///
+/// # Parameters
+/// - `text`: An optional string slice that may contain the text to be centered.
+/// - `width`: The total width within which the text should be centered.
+///
+/// # Returns
+/// A `String` containing the center-aligned text. If `text` is `None`, an empty string is returned.
+pub fn center(text: Option<&str>, width: Option<usize>) -> String {
+    // Convert Option<&str> to Option<String>
+    let text_string = text.map(|s| s.to_string());
+    
+    // Create a TextFormatter instance with the optional string
+    let mut formatter = TextFormatter::new(text_string);
+    
+    // Set the width, only if it is provided
+    if let Some(w) = width { formatter.set_width(w); }
+    
+    // Center the text and return the result
+    formatter.center()
+}
 
-	let width = width.unwrap_or(0);
+/// Truncates the provided text to fit within the specified width, applying the designated frame type.
+///
+/// # Parameters
+/// - `text`: An optional string slice that may contain the text to be truncated.
+/// - `width`: The maximum width the text should occupy.
+/// - `frame`: An optional `Frame` type that defines how the text should be truncated (e.g., `CHOP`).
+///
+/// # Returns
+/// A `String` containing the truncated text. If `text` is `None`, an empty string is returned.
+pub fn truncate(
+	text: Option<&str>,
+	width: Option<usize>,
+	no_ellipsis: Option<bool>,
+	frame: Option<Frame>,
+) -> String {
+    // Convert Option<&str> to Option<String>
+    let text_string = text.map(|s| s.to_string());
+    
+    // Create a TextFormatter instance with the optional string
+    let mut formatter = TextFormatter::new(text_string);
+    
+    // Set the frame to the provided value or default to TRUNCATE
+    formatter.set_frame(frame.unwrap_or(Frame::TRUNCATE));
+    
+    // Set the width, only if it is provided
+    if let Some(w) = width { formatter.set_width(w); }
+    
+    // Set no_ellipsis, only if it is provided
+    if let Some(n) = no_ellipsis { formatter.set_no_ellipsis(n); }
+    
+    // Perform truncation and return the result
+    formatter.truncate()
+}
 
-	// Determine if ellipsis should be used
-	let use_ellipsis = no_ellipsis.unwrap_or(false) == false;
-
-	// Split input into lines and process each line
-	let truncated_lines: Vec<String> = cleaned
-		.lines()
-		.map(|line| {
-			let text_width = line.width();
-			if text_width > width {
-				let mut current_width = 0;
-				let mut truncated = String::new();
-				let ellipsis_len = if use_ellipsis { 3 } else { 0 };
-				let max_width = width.saturating_sub(ellipsis_len);
-
-				for c in line.chars() {
-					let char_width = c.width().unwrap_or(0);
-					if current_width + char_width > max_width {
-						break;
-					}
-					current_width += char_width;
-					truncated.push(c);
-				}
-
-				// Add ellipsis if applicable
-				if use_ellipsis && width > 3 {
-					format!("{}...", truncated.trim())
-				} else {
-					truncated.trim().to_string() // Convert to String for uniform return type
-				}
-			} else {
-				line.to_string()                 // If not truncated, return the original line as a String
-			}
-		})
-		.collect();
-
-	// Join the truncated lines into a single output string
-	truncated_lines.join("\n")
+pub fn text(
+	text: Option<&str>,
+	width: Option<usize>,
+	frame: Option<Frame>,
+	no_ellipsis: Option<bool>,
+	pad_decimal_digits: Option<bool>,
+	max_decimal_digits: Option<usize>,
+	decimal_separator: Option<char>,
+	use_thousand_separator: Option<bool>,
+	thousand_separator: Option<char>,
+	alignment: Option<Alignment>,
+) -> String {
+    // Convert Option<&str> to Option<String>
+    let text_string = text.map(|s| s.to_string());
+    
+    // Create a TextFormatter instance with the optional string
+    let mut formatter = TextFormatter::new(text_string);
+    
+    // Set the width, only if it is provided
+    if let Some(w) = width { formatter.set_width(w); }
+    
+    // Set the frame to the provided value or default to TRUNCATE
+    if let Some(n) = frame { formatter.set_frame(n); }
+    
+    // Set no_ellipsis, only if it is provided
+    if let Some(n) = no_ellipsis { formatter.set_no_ellipsis(n); }
+    
+    // Set pad_decimal_digits, only if it is provided
+    if let Some(n) = pad_decimal_digits { formatter.set_pad_decimal_digits(n); }
+    
+    // Set max_decimal_digits, only if it is provided
+    if let Some(n) = max_decimal_digits { formatter.set_max_decimal_digits(n); }
+    
+    // Set decimal_separator, only if it is provided
+    if let Some(n) = decimal_separator { formatter.set_decimal_separator(n); }
+    
+    // Set use_thousand_separator, only if it is provided
+    if let Some(n) = use_thousand_separator { formatter.set_use_thousand_separator(n); }
+    
+    // Set thousand_separator, only if it is provided
+    if let Some(n) = thousand_separator { formatter.set_thousand_separator(n); }
+    
+    // Set alignment, only if it is provided
+    if let Some(n) = alignment { formatter.set_alignment(n); }
+    
+    // Perform truncation and return the result
+    formatter.text()
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 pub enum Frame {
-	/// Shorten the text to fit the width
-	TRUNCATE,
-	/// Wrap the text to fit the width
-	WRAP,
-	/// Leave the text unchanged
-	NONE,
+    /// Truncate the end of text to fit the width.
+    TRUNCATE,
+    /// Chop off the start of text to fit the width.
+    CHOP,
+    /// Wrap the text to fit the width.
+    WRAP,
+    /// Leave the text unchanged.
+    NONE,
+}
+
+impl Default for Frame {
+    fn default() -> Self {
+        Frame::TRUNCATE
+    }
 }
 
 impl FromStr for Frame {
 	type Err = String;
 
-	fn from_str(input: &str) -> Result<Frame, Self::Err> {
-		match input.to_uppercase().as_str() {
+	fn from_str(text: &str) -> Result<Frame, Self::Err> {
+		match text.to_uppercase().as_str() {
 			"TRUNCATE" => Ok(Frame::TRUNCATE),
+			"CHOP" => Ok(Frame::CHOP),
 			"WRAP" => Ok(Frame::WRAP),
 			"NONE" => Ok(Frame::NONE),
-			_ => Err(format!("Invalid frame type: {}", input)),
+			_ => Err(format!("Invalid frame type: {}", text)),
 		}
 	}
 }
@@ -297,6 +226,7 @@ impl fmt::Display for Frame {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		match self {
 			Frame::TRUNCATE => write!(f, "TRUNCATE"),
+			Frame::CHOP => write!(f, "CHOP"),
 			Frame::WRAP => write!(f, "WRAP"),
 			Frame::NONE => write!(f, "NONE"),
 		}
@@ -305,23 +235,34 @@ impl fmt::Display for Frame {
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 pub enum Alignment {
-	/// Align to the right if numeric
+	/// Automatically align to the right for numeric values,
+	/// or left for non-numeric values.
 	AUTO,
+	
+	/// Center align the text.
 	CENTER,
+	
+	/// Left align the text.
 	LEFT,
+	
+	/// Right align the text.
 	RIGHT,
+	
+	/// No alignment; do not apply any specific alignment.
+	NONE,
 }
 
 impl FromStr for Alignment {
 	type Err = String;
 
-	fn from_str(input: &str) -> Result<Alignment, Self::Err> {
-		match input.to_uppercase().as_str() {
+	fn from_str(text: &str) -> Result<Alignment, Self::Err> {
+		match text.to_uppercase().as_str() {
 			"AUTO"   => Ok(Alignment::AUTO),
 			"CENTER" => Ok(Alignment::CENTER),
 			"LEFT"   => Ok(Alignment::LEFT),
 			"RIGHT"  => Ok(Alignment::RIGHT),
-			_ => Err(format!("Invalid frame type: {}", input)),
+			"NONE"   => Ok(Alignment::NONE),
+			_ => Err(format!("Invalid frame type: {}", text)),
 		}
 	}
 }
@@ -333,6 +274,7 @@ impl fmt::Display for Alignment {
 			Alignment::CENTER => write!(f, "CENTER"),
 			Alignment::LEFT   => write!(f, "LEFT"  ),
 			Alignment::RIGHT  => write!(f, "RIGHT" ),
+			Alignment::NONE   => write!(f, "NONE"  ),
 		}
 	}
 }
@@ -340,10 +282,10 @@ impl fmt::Display for Alignment {
 #[derive(Args, Clone)]
 pub struct TextFormatter {
 	/// Text be formatted according to the specified options
-	pub input: Option<String>,
+	pub text: Option<String>,
 
 	// The maximum width (in characters) allocated for the formatted field.
-	// This width determines how the input text will be displayed in the output.
+	// This width determines how the text text will be displayed in the output.
 	#[arg(default_value_t = 0)]
 	#[arg(short, long)]
 	pub width: usize,
@@ -411,7 +353,7 @@ impl Default for TextFormatter {
 	/// Creates a new `TextFormatter` with default settings.
 	fn default() -> Self {
 		Self {
-			input:                   None, // No input
+			text:                   None, // No text
 			width:                     48, // Default 48
 			frame:        Frame::TRUNCATE, // Default TRUNCATE
 			alignment:    Alignment::AUTO, // Default text left, numbers right
@@ -431,19 +373,18 @@ impl TextFormatter {
 	///
 	/// # Arguments
 	///
-	/// * `input` - The content to be formatted.
+	/// * `text` - The content to be formatted.
 	/// * `width` - The width of the cell.
 	///
 	/// # Returns
 	///
 	/// A new `Formatter` with default values for formatting options.
-	pub fn new(input: Option<String>) -> Self {
-
-		// Initialize a default instance of TableBuilder
+	pub fn new(text: Option<String>) -> Self {
+		// Initialize a default instance of TextFormatter
 		let mut formatter = TextFormatter::default();
 
-		// Attempt to read input, falling back to stdin
-		let input_data = match unwrap_or_stdin(input, 5, 500) {
+		// Attempt to read text, falling back to stdin if text is None
+		let text_data = match unwrap_or_stdin(text, 5, 500) {
 			Ok(content) => content,
 			Err(e) => {
 				eprintln!("Error: {}", e);
@@ -451,9 +392,11 @@ impl TextFormatter {
 			}
 		};
 
-		// Clean and set the input field
-		formatter.input = Some(clean(Some(&input_data)));
-		formatter // Return the modified builder
+		// Set the text field with the read/cleaned data
+		formatter.text = Some(text_data);
+
+		// Return the updated formatter instance
+		formatter
 	}
 
 	pub fn set_width(&mut self, width: usize) -> &mut Self {
@@ -516,9 +459,9 @@ impl TextFormatter {
 			return is_numeric;
 		}
 
-		// Ensure that input is present (unwrap Option to get &str)
-		let normalized_content = if let Some(input_str) = &self.input {
-			input_str
+		// Ensure that text is present (unwrap Option to get &str)
+		let normalized_content = if let Some(text_str) = &self.text {
+			text_str
 				.replace(self.thousand_separator, "")  // Using characters directly
 				.replace(self.decimal_separator, ".")
 		} else {
@@ -533,56 +476,406 @@ impl TextFormatter {
 		self.is_numeric.unwrap()
 	}
 
-	/// Formats the input text based on the specified frame and width.
+	pub fn is_hex(&self) -> Result<String, String> {
+		// First, check if the text exists (unwrap or handle None case)
+		if let Some(ref text) = self.text {
+			// Now check if all characters are valid hexadecimal digits
+			if text.chars().all(|c| c.is_ascii_hexdigit()) {
+				Ok(text.to_string()) // Return Ok if it's a valid hex string
+			} else {
+				Err(format!("'{}' is not a valid hex string", text)) // Return Err if not valid
+			}
+		} else {
+			Err("No text provided".to_string()) // Handle case when text is None
+		}
+	}
+
+    /// Cleans the input text by trimming whitespace and removing empty lines.
+    ///
+    /// This method will:
+    /// - Trim leading and trailing whitespace from each line.
+    /// - Remove any lines that are empty after trimming.
+    /// - Update `self.text` with the cleaned text.
+    ///
+    /// If no lines remain after cleaning, `self.text` will be set to `None`,
+    /// and an empty string will be returned.
+    ///
+    /// # Returns
+    ///
+    /// A `String` containing the cleaned text.
+	pub fn clean(&mut self) -> String {
+		// Read data from self.text or default to empty string if None
+		let text_data = self.text.as_deref().unwrap_or("");
+
+		// Clean the text by trimming lines and removing empty lines
+		let cleaned_lines: Vec<String> = text_data
+			.lines()
+			.map(|line| line.trim().to_string()) // Trim each line
+			.filter(|line| !line.is_empty())     // Filter out empty lines
+			.collect();
+
+		// If there are no cleaned lines, set text to None and return an empty string
+		if cleaned_lines.is_empty() {
+			self.text = None; // Set text to None if no lines remain
+			return String::new(); // Return empty string
+		}
+
+		// Join the cleaned lines with newline characters
+		self.text = Some(cleaned_lines.join("\n")); // Update self.text
+		self.text.as_ref().unwrap().clone() // Return the cleaned text as a String
+	}
+
+    /// Right-aligns the text stored in `self.text` and updates it.
+    ///
+    /// # Returns
+    ///
+    /// Returns a `String` that contains the right-aligned text. 
+    /// If no text is provided, it returns an empty string.
+    pub fn right(&mut self) -> String {
+        // Unwrap text from self.text, or return an empty string if None
+        let text = match &self.text {
+            Some(data) => data, // Use the contained data
+            None => {
+                eprintln!("Error: No text provided.");
+                return String::new(); // Return empty string if no text
+            }
+        };
+
+        // Split the text into lines and trim trailing whitespace
+        let lines: Vec<&str> = text
+            .lines()
+            .map(str::trim_end) // Trim trailing whitespace from each line
+            .collect();
+
+        // Calculate the maximum width of the lines
+        let max_line_width = lines.iter()
+            .map(|line| line.width())
+            .max()
+            .unwrap_or(0); // Fallback to 0 if there are no lines
+
+        // Determine the effective width to use
+        let effective_width = if self.width > 0 {
+            std::cmp::max(self.width, max_line_width) // Use max width
+        } else {
+            max_line_width // Use max_line_width if self.width is 0
+        };
+
+        // Ensure effective_width is positive; if max_line_width is 0, use 1 to avoid formatting issues
+        let effective_width = if effective_width == 0 { 1 } else { effective_width };
+
+        // Iterate through each line and right-align it
+        let aligned_lines: Vec<String> = lines
+            .iter()
+            .map(|line| {
+                let line_width = line.width(); // Get the width of the current line
+                if line_width < effective_width {
+                    // Right-align with padding if line is shorter than the effective width
+                    format!("{:>width$}", line, width = effective_width)
+                } else {
+                    // No alignment needed if the line is already wider than or equal to the effective width
+                    line.to_string()
+                }
+            })
+            .collect();
+
+        // Join the aligned lines into a single output string
+        let result = aligned_lines.join("\n");
+
+        // Set the text to the newly aligned text
+        self.text = Some(result.clone());
+
+        // Return the aligned string
+        result
+    }
+
+	pub fn left(&mut self) -> String {
+		let text = self.text.as_deref().unwrap_or_else(|| {
+			eprintln!("Error: No text provided.");
+			""
+		});
+
+		// Collect lines, trim leading whitespace, and join them with newlines
+		let left_aligned = text
+			.lines()
+			.map(|line| line.trim_start().to_string()) // Trim leading whitespace from each line
+			.collect::<Vec<_>>()                       // Collect trimmed lines into a Vec<String>
+			.join("\n");                               // Join them with newlines
+
+		// Update self.text with the left-aligned result
+		self.text = Some(left_aligned.clone());
+
+		// Return the left-aligned text
+		left_aligned
+	}
+
+	/// Centers the text within the specified width, applying the given frame formatting.
 	///
-	/// This method processes the input text, cleans it, and applies formatting 
-	/// based on the frame settings (TRUNCATE, WRAP, or no frame). Depending on 
-	/// the frame, it will either truncate, wrap, or return the cleaned input directly.
+	/// This function takes the current text, trims whitespace from each line,
+	/// and processes the text based on the specified `Frame` variant:
+	///
+	/// - `Frame::NONE`: No modifications are made to the text; it is returned unchanged.
+	/// - `Frame::WRAP`: If a line exceeds the specified width, it is wrapped to fit within the width.
+	/// - `Frame::TRUNCATE` and `Frame::CHOP`: If a line exceeds the width, it is truncated or chopped to fit,
+	///   ensuring the text remains within the specified width.
+	///
+	/// The resulting centered lines are padded with spaces to align them within the effective width.
 	///
 	/// # Returns
 	///
-	/// A `String` containing the formatted text.
+	/// Returns the centered text as a `String`. If no text is provided, an empty string is returned.
 	///
-	/// # Frame behavior:
+	/// # Errors
 	///
-	/// - **TRUNCATE**: If the text width exceeds the specified width, the text is truncated
-	///   with an optional ellipsis.
-	/// - **WRAP**: Wraps the text to the specified width.
-	/// - **None**: Returns the cleaned input text without any formatting.
-	pub fn format_text(&self) -> String {
-		// Clean the input
+	/// If the provided text is `None`, an error message is printed to standard error, and an empty string is returned.
+	pub fn center(&mut self) -> String {
+		// Get the text, or return an empty string if None
+		let text = self.text.as_deref().unwrap_or_else(|| {
+			eprintln!("Error: No text provided.");
+			""
+		});
 
+		// Split text into lines, trim whitespace, and remove empty lines
+		let lines: Vec<String> = text.lines()
+			.filter_map(|line| {
+				let trimmed = line.trim();
+				if trimmed.is_empty() {
+					None // Skip empty lines
+				} else {
+					Some(trimmed.to_string()) // Return trimmed line as Some(String)
+				}
+			})
+			.collect();
+
+		// Determine the effective width based on the specified frame
+		let effective_width = if self.frame == Frame::NONE {
+			usize::MAX // No width limit for NONE
+		} else {
+			self.width
+		};
+
+		let mut centered_lines: Vec<String> = Vec::with_capacity(lines.len());
+
+		for line in lines {
+			let text_width = line.width();
+
+			// Determine the appropriate width for truncation or wrapping
+			let max_width = if text_width > effective_width {
+				match self.frame {
+					Frame::WRAP => {
+						// Use textwrap to wrap the line
+						textwrap::wrap(&line, effective_width).join("\n")
+					},
+					Frame::NONE => line.clone(), // No modification
+					_ => {
+						// Truncate the line if it exceeds the effective width
+						line.chars().take(effective_width).collect()
+					},
+				}
+			} else {
+				line.clone() // No need to truncate or wrap
+			};
+
+			// Calculate padding for centering
+			let total_padding = effective_width.saturating_sub(max_width.width());
+			let left_padding = total_padding / 2;
+
+			// Center the line with padding
+			let centered_line = format!("{:width$}{}", "", max_width, width = left_padding);
+			centered_lines.push(centered_line);
+		}
+
+		// Join the centered lines into a single output string
+		let result = centered_lines.join("\n");
+
+		// Set self.text to the newly centered text
+		self.text = Some(result.clone());
+
+		// Return the centered text
+		result
+	}
+
+	/// Wraps the text to fit within the specified width.
+	///
+	/// This function takes the text stored in `self.text`, trims leading and trailing
+	/// whitespace from each line, and wraps the text to fit within the specified width.
+	/// The wrapped lines are then joined into a single string with newline characters.
+	///
+	/// If no text is provided, an error message is printed, and an empty string is returned.
+	///
+	/// # Returns
+	///
+	/// A `String` containing the wrapped text, or an empty string if no text was provided.
+	///
+	/// # Example
+	///
+	/// ```
+	/// let mut formatter = TextFormatter::new(Some("This is a long line of text that will be wrapped to fit within a specified width."));
+	/// formatter.set_width(20);
+	/// let wrapped_text = formatter.wrap();
+	/// println!("{}", wrapped_text);
+	/// ```
+	pub fn wrap(&mut self) -> String {
+		let text = self.text.as_deref().unwrap_or_else(|| {
+			eprintln!("Error: No text provided.");
+			""
+		});
+
+		// Trim whitespace from each line, wrap, and join the results
+		let wrapped_text = textwrap::wrap(
+			&text.lines()
+				.map(str::trim)          // Trim leading and trailing whitespace
+				.collect::<Vec<_>>()     // Collect trimmed lines
+				.join("\n"),             // Join trimmed lines into a single string
+			self.width,
+		)
+		.into_iter()
+		.map(String::from)               // Convert Cow to String
+		.collect::<Vec<_>>()             // Collect wrapped lines
+		.join("\n");                     // Join wrapped lines with newlines
+
+		// Update self.text with the new wrapped text
+		self.text = Some(wrapped_text.clone());
+
+		// Return the wrapped text
+		wrapped_text
+	}
+
+	/// Truncates the text in the specified frame, ensuring it fits within the designated width.
+	///
+	/// This function ensures the text is left-aligned or right-aligned based on the specified
+	/// frame type. If the text exceeds the maximum width:
+	/// - For `Frame::CHOP`, characters are removed from the beginning of the line,
+	///   and ellipses are prepended if applicable.
+	/// - By default, characters are collected from the start until the width is exceeded,
+	///   with ellipses appended at the end if applicable.
+	///
+	/// # Returns
+	/// A `String` containing the truncated text. If the original text fits within the width,
+	/// the original text is returned unchanged.
+	///
+	/// # Examples
+	/// ```
+	/// let mut text_instance = Text::new("This is a long line of text that might need truncation.");
+	/// text_instance.set_width(20);
+	/// text_instance.set_frame(Frame::CHOP);
+	/// let truncated = text_instance.truncate();
+	/// assert_eq!(truncated, "...of text that might need truncation.");
+	/// ```
+	pub fn truncate(&mut self) -> String {
+		// Ensure text is left-aligned or right-aligned based on frame
+		match self.frame {
+			Frame::CHOP => self.right(),
+			_ => self.left(),
+		};
+
+		// Extract the text from self.text or provide a default empty string
+		let text = self.text.as_deref().unwrap_or_else(|| {
+			eprintln!("Error: No text provided.");
+			""
+		});
+
+		// Process the text, truncate each line as necessary
+		let truncated_lines: Vec<String> = text
+			.lines()
+			.map(|line| {
+				let text_width = line.width();
+				if text_width > self.width {
+					let ellipsis_len = if self.no_ellipsis { 0 } else { 3 };
+					let max_width = self.width.saturating_sub(ellipsis_len);
+
+					let mut current_width = 0;
+					let mut truncated = String::new();
+
+					match self.frame {
+						Frame::CHOP => {
+							// Iterate from the end to find how much to keep
+							for c in line.chars().rev() {
+								let char_width = c.width().unwrap_or(0);
+								current_width += char_width;
+
+								if current_width > max_width {
+									truncated.insert(0, c); // Prepend character
+								} else {
+									truncated.insert(0, c);
+								}
+							}
+							// Prepend ellipses if applicable
+							if !self.no_ellipsis && self.width > 3 {
+								format!("...{}", truncated.trim())
+							} else {
+								truncated.trim().to_string()
+							}
+						},
+						_ => {
+							for c in line.chars() {
+								let char_width = c.width().unwrap_or(0);
+								if current_width + char_width > max_width {
+									break;
+								}
+								current_width += char_width;
+								truncated.push(c);
+							}
+							// Append ellipses if applicable
+							if !self.no_ellipsis && self.width > 3 {
+								format!("{}...", truncated.trim())
+							} else {
+								truncated.trim().to_string()
+							}
+						},
+					}
+				} else {
+					line.to_string() // Return original line if no truncation is needed
+				}
+			})
+			.collect();
+
+		// Join the truncated lines into a single string
+		let truncated_text = truncated_lines.join("\n");
+
+		// Update self.text with the truncated text
+		self.text = Some(truncated_text.clone());
+
+		// Return the truncated text
+		truncated_text
+	}
+
+	/// Formats the text based on the specified frame and alignment settings.
+	///
+	/// This function formats the text according to the `frame` setting:
+	/// - If the frame is `TRUNCATE` or `CHOP`, it truncates the text to fit within the specified width.
+	/// - If the frame is `WRAP`, it wraps the text to the specified width.
+	/// - If the frame is `NONE`, it returns the original text without modification.
+	///
+	/// After formatting, the text is aligned based on the specified alignment setting:
+	/// - `AUTO`: No specific alignment; returns the formatted text as is.
+	/// - `NONE`: No alignment applied; returns the formatted text unchanged.
+	/// - `LEFT`: Aligns the text to the left.
+	/// - `RIGHT`: Aligns the text to the right, padding as necessary.
+	/// - `CENTER`: Centers the text within the specified width.
+	///
+	/// Returns the formatted and aligned text as a `String`.
+	pub fn format_text(&mut self) -> String {
 		// Determine the formatted text based on the frame setting
 		let formatted_text = match self.frame {
-			Frame::TRUNCATE => {
-				// Call the truncate function directly
-				truncate(self.input.as_deref(), Some(self.width), Some(self.no_ellipsis))
-			}
-			Frame::WRAP => {
-				// Wrap the text to the specified width
-				wrap(self.input.as_deref(), self.width)
-			}
-			_ => {
-				// If no frame is specified, just return the cleaned text
-				self.input.as_ref().expect("REASON").clone()
-			}
+			Frame::TRUNCATE | Frame::CHOP => self.truncate(),
+			Frame::WRAP => self.wrap(),
+			Frame::NONE => self.text.as_ref().expect("Text is None").clone(),
 		};
 
 		// Apply alignment based on the settings
-		let width = self.width;
 		let aligned_result = match self.alignment {
-			Alignment::AUTO   => formatted_text,                       // No alignment
-			Alignment::CENTER => center(Some(&formatted_text), Some(width)),
-			Alignment::LEFT   => left(Some(&formatted_text)),
-			Alignment::RIGHT  => right(Some(&formatted_text),  Some(width)),
+			Alignment::AUTO | Alignment::NONE => formatted_text,
+			Alignment::LEFT => left(Some(&formatted_text)),
+			Alignment::RIGHT => right(Some(&formatted_text), Some(self.width)),
+			Alignment::CENTER => center(Some(&formatted_text), Some(self.width)),
 		};
 
 		aligned_result
 	}
 
-	/// Formats the input as a numeric value with custom formatting options.
+	/// Formats the text as a numeric value with custom formatting options.
 	///
-	/// This method takes the input string, cleans and normalizes it, and attempts
+	/// This method takes the text string, cleans and normalizes it, and attempts
 	/// to parse it as a floating-point number. If parsing is successful, it formats
 	/// the number according to the specified settings, such as applying thousands 
 	/// separators, padding decimal digits, and custom alignment. If parsing fails, 
@@ -590,7 +883,7 @@ impl TextFormatter {
 	///
 	/// # Returns
 	///
-	/// A `String` containing the formatted numeric value. If the input cannot be parsed
+	/// A `String` containing the formatted numeric value. If the text cannot be parsed
 	/// as a number, an empty string is returned and an error message is printed.
 	///
 	/// # Behavior:
@@ -598,13 +891,13 @@ impl TextFormatter {
 	/// - **Thousand Separators**: Adds thousands separators based on the specified custom separator.
 	/// - **Decimal Formatting**: Pads decimal places if specified, up to the maximum number of decimal digits.
 	/// - **Alignment**: Aligns the formatted number to the left, right, or center based on the `alignment` setting.
-	/// - **Error Handling**: If the input is not a valid numeric value, it returns an empty string and prints an error.
+	/// - **Error Handling**: If the text is not a valid numeric value, it returns an empty string and prints an error.
 	///
 	/// # Example:
 	///
 	/// ```
 	/// let formatter = NumericFormatter {
-	///     input: "1.234567",
+	///     text: "1.234567",
 	///     thousand_separator: ',',
 	///     decimal_separator: '.',
 	///     pad_decimal_digits: true,
@@ -618,18 +911,18 @@ impl TextFormatter {
 	/// ```
 	pub fn format_numeric(&self) -> String {
 
-		// Normalize input by replacing custom separators
+		// Normalize text by replacing custom separators
 
-		// Ensure that input is present (unwrap Option to get &str)
-		let normalized = if let Some(input_str) = &self.input {
-			input_str
+		// Ensure that text is present (unwrap Option to get &str)
+		let normalized = if let Some(text_str) = &self.text {
+			text_str
 				.replace(self.thousand_separator, "")  // Using characters directly
 				.replace(self.decimal_separator, ".")
 		} else {
 			String::new()
 		};
 
-		// Attempt to parse the normalized input as a number
+		// Attempt to parse the normalized text as a number
 		let result: Result<f64, ParseFloatError> = normalized.parse();
 
 		match result {
@@ -675,10 +968,11 @@ impl TextFormatter {
 				// Apply alignment
 				let width = self.width;
 				let aligned_result = match self.alignment {
-					Alignment::AUTO   => right(Some(&final_formatted_number),  Some(width)),
-					Alignment::CENTER => center(Some(&final_formatted_number), Some(width)),
+					Alignment::NONE   => final_formatted_number,
 					Alignment::LEFT   => left(Some(&final_formatted_number)),
+					Alignment::AUTO   => right(Some(&final_formatted_number),  Some(width)),
 					Alignment::RIGHT  => right(Some(&final_formatted_number),  Some(width)),
+					Alignment::CENTER => center(Some(&final_formatted_number), Some(width)),
 				};
 
 				aligned_result
@@ -691,7 +985,104 @@ impl TextFormatter {
 		}
 	}
 
-	/// Formats the input content based on its type (numeric or text).
+	pub fn text(&mut self) -> String {
+		// Extract the text or provide a default empty string, setting is_numeric to None if no text is found
+		let text = self.text.as_deref().unwrap_or_else(|| {
+			eprintln!("Error: No text provided.");
+			self.is_numeric = None; // Set to None since no text is available
+			return "";
+		});
+
+		// Normalize text by replacing custom separators
+		let normalized = text
+			.replace(self.thousand_separator, "")  // Remove thousand separators
+			.replace(self.decimal_separator, ".");   // Normalize decimal separator
+
+		// Attempt to parse the normalized text as a number
+		match normalized.parse::<f64>() {
+			Ok(number) => {
+				// Format the number with native Rust formatting
+				let formatted = if self.pad_decimal_digits {
+					format!("{:.*}", self.max_decimal_digits, number)
+				} else {
+					format!("{}", number)
+				};
+
+				// Split formatted number into integer and fractional parts
+				let parts: Vec<&str> = formatted.split('.').collect();
+				let integer_part = parts[0];
+				let fractional_part = if parts.len() > 1 { parts[1] } else { "" };
+
+				// Apply thousands separators if needed
+				let integer_with_thousands = if self.use_thousand_separator {
+					let integer_chars: Vec<char> = integer_part.chars().rev().collect();
+					let mut result_chars = Vec::new();
+					for (i, ch) in integer_chars.iter().enumerate() {
+						if i > 0 && i % 3 == 0 {
+							result_chars.push(self.thousand_separator);
+						}
+						result_chars.push(*ch);
+					}
+					result_chars.reverse();
+					result_chars.iter().collect::<String>()
+				} else {
+					integer_part.to_string()
+				};
+
+				// Combine integer and fractional parts and replace decimal separator
+				let formatted_result = if !fractional_part.is_empty() {
+					format!("{}.{}", integer_with_thousands, fractional_part)
+				} else {
+					integer_with_thousands
+				};
+
+				// Replace decimal separator with custom one
+				let final_formatted_number = formatted_result.replace('.', &self.decimal_separator.to_string());
+
+				// Apply alignment
+				let aligned_result = match self.alignment {
+					Alignment::NONE   => final_formatted_number,
+					Alignment::LEFT   => left(Some(&final_formatted_number)),
+					Alignment::AUTO   => right(Some(&final_formatted_number), Some(self.width)),
+					Alignment::RIGHT  => right(Some(&final_formatted_number), Some(self.width)),
+					Alignment::CENTER => center(Some(&final_formatted_number), Some(self.width)),
+				};
+
+				// Set properties
+				self.is_numeric = Some(true);
+				self.text = Some(aligned_result.clone()); // Store the formatted text
+				aligned_result // Return the formatted text
+			}
+			Err(_) => {
+				// If parsing fails, format as general text based on the frame setting
+				let formatted_text = match self.frame {
+					Frame::TRUNCATE | Frame::CHOP => self.truncate(),
+					Frame::WRAP => self.wrap(),
+					Frame::NONE => {
+						let text_value = self.text.clone().expect("Text is None");
+						self.is_numeric = Some(false); // Set to false because it couldn't parse
+						text_value // Return original text
+					},
+				};
+
+				// Apply alignment based on the settings
+				let aligned_result = match self.alignment {
+					Alignment::AUTO | Alignment::NONE => formatted_text.clone(),
+					Alignment::LEFT => left(Some(&formatted_text)),
+					Alignment::RIGHT => right(Some(&formatted_text), Some(self.width)),
+					Alignment::CENTER => center(Some(&formatted_text), Some(self.width)),
+				};
+
+				// Set properties
+				self.is_numeric = Some(false);
+				self.text = Some(aligned_result.clone()); // Store the formatted text
+				aligned_result // Return the formatted text
+			}
+		}
+	}
+
+
+	/// Formats the text content based on its type (numeric or text).
 	///
 	/// This method checks if the formatted content has already been cached. If it is, 
 	/// the cached result is returned immediately. If not, it determines whether the 

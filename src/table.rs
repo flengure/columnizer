@@ -693,7 +693,7 @@ impl TableBuilder {
 
 		// Determine the column widths based on the format_text option
 		match self.frame {
-			Frame::TRUNCATE | Frame::NONE => {
+			Frame::TRUNCATE | Frame::CHOP | Frame::NONE => {
 				// If TRUNCATE or NONE, set column_widths to the max of header and data widths
 				for i in 0..column_widths.len() {
 					column_widths[i] = header_column_widths[i].max(data_column_widths[i]);

@@ -20,20 +20,5 @@ pub struct Cli {
 #[derive(Subcommand)]
 pub enum Commands {
 	/// Determins if the input is a hex strin
-
-	Clean(CleanCli),
-	/// Aligns to the right, padding with spaces up to width
-	Right(RightCli),
-	/// Aligns to the left
-	Left(LeftCli),
-	/// Centers according to width
-	Center(CenterCli),
-	/// Wraps to width
-	Wrap(WrapCli),
-	/// Truncates to width
-	Truncate(TruncateCli),
-	/// Formats text based on certain parameters
-	Format(TextFormatter),
-	/// Formats table based on certain parameters
-	Table(TableBuilder),
+	hex(IsCli),
 }

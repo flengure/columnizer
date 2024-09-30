@@ -1,5 +1,5 @@
 use clap::{Args, Parser, Subcommand};
-use crate::text::{center, clean, left, right, truncate, wrap, TextFormatter};
+use crate::text::{center, clean, Frame, left, right, truncate, wrap, text, TextFormatter};
 use crate::table::TableBuilder;
 
 #[derive(Parser)]
@@ -25,24 +25,24 @@ pub enum Formats {
 	/// Truncates to width
 	Truncate(TruncateCli),
 	/// Formats text based on certain parameters
-	Format(TextFormatter),
+	Text(TextFormatter),
 	/// Formats table based on certain parameters
 	Table(TableBuilder),
 }
 
 #[derive(Args)]
 pub struct CleanCli {
-	pub input: Option<String>,
+	pub text: Option<String>,
 }
 
 #[derive(Args)]
 pub struct LeftCli {
-	pub input: Option<String>,
+	pub text: Option<String>,
 }
 
 #[derive(Args)]
 pub struct RightCli {
-	pub input: Option<String>,
+	pub text: Option<String>,
 
 	#[arg(short, long)]
 	pub width: Option<usize>,
@@ -50,15 +50,15 @@ pub struct RightCli {
 
 #[derive(Args)]
 pub struct WrapCli {
-	pub input: Option<String>,
+	pub text: Option<String>,
 
 	#[arg(short, long)]
-	pub width: usize,
+	pub width: Option<usize>,
 }
 
 #[derive(Args)]
 pub struct CenterCli {
-	pub input: Option<String>,
+	pub text: Option<String>,
 
 	#[arg(short, long)]
 	pub width: Option<usize>,
@@ -66,52 +66,55 @@ pub struct CenterCli {
 
 #[derive(Args)]
 pub struct TruncateCli {
-	pub input: Option<String>,
+	pub text: Option<String>,
 
 	#[arg(short, long)]
 	pub width: Option<usize>,
 
 	#[arg(short, long)]
-	pub no_ellipsis: bool,
+	pub no_ellipsis: Option<bool>,
+
+	#[arg(short, long)]
+	pub frame: Option<Frame>,
 }
 
 pub fn run_cli(cli: &Cli) {
 
 	match &cli.command {
 		Formats::Center(input) => {
-			println!("{}", center(input.input.as_deref(), input.width));
+			println!("{}", center(input.text.as_deref(), input.width));
 		},
 		Formats::Clean(input) => {
-			println!("{}", clean(input.input.as_deref()));
+			println!("{}", clean(input.text.as_deref()));
 		},
 		Formats::Left(input) => {
-			println!("{}", left(input.input.as_deref()));
+			println!("{}", left(input.text.as_deref()));
 		},
 		Formats::Right(input) => {
-			println!("{}", right(input.input.as_deref(), input.width));
+			println!("{}", right(input.text.as_deref(), input.width));
 		},
-		Formats::Truncate(input) => {
-			println!("{}", truncate(input.input.as_deref(), input.width, Some(input.no_ellipsis)));
-		},
-		Formats::Wrap(input) => {
-			println!("{}", wrap(input.input.as_deref(), input.width));
-		},
-		Formats::Format(input) => {
-			let mut text = TextFormatter::new(input.input.clone())
-				.set_width(input.width)
-				.set_frame(input.frame)
-				.set_no_ellipsis(input.no_ellipsis)
-				.set_alignment(input.alignment)
-				.set_pad_decimal_digits(input.pad_decimal_digits)
-				.set_max_decimal_digits(input.max_decimal_digits)
-				.set_decimal_separator(input.decimal_separator)
-				.set_use_thousand_separator(input.use_thousand_separator)
-				.set_thousand_separator(input.thousand_separator)
-				.clone();
-
-			let formatted_text = text.formatted();
-			println!("{}", formatted_text);
-		},
+		Formats::Truncate(input) => { println!("{}", truncate(
+			input.text.as_deref(), 
+			input.width, 
+			input.no_ellipsis,
+			input.frame,
+		)); },
+		Formats::Wrap(input) => { println!("{}", wrap(
+			input.text.as_deref(),
+			input.width
+		)); },
+		Formats::Text(input) => { println!("{}", text(
+			input.text.as_deref(), 
+			Some(input.width),
+			Some(input.frame),
+			Some(input.no_ellipsis),
+			Some(input.pad_decimal_digits),
+			Some(input.max_decimal_digits),
+			Some(input.decimal_separator),
+			Some(input.use_thousand_separator),
+			Some(input.thousand_separator),
+			Some(input.alignment),
+		)); }
 		Formats::Table(input) => {
 			let mut table = TableBuilder::new(input.input.clone())
 				.set_ifs(input.ifs.clone())

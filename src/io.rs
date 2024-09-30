@@ -35,17 +35,17 @@ pub fn unwrap_or_stdin<T: AsRef<str>>(
 	input: Option<T>, max_attempts: usize, delay: u64
 ) -> Result<String, Box<dyn Error>> {
 
-	// Create a buffer to store the read data
-	let mut buf = String::new();
-
 	// If an input is provided, check if it's a valid file path or a string.
-	if let Some(path) = input {
+	if let Some(input_data) = input {
 
-		let path_str = path.as_ref();
-		let path = Path::new(path_str);
+		let input_str = input_data.as_ref();
+		let path = Path::new(input_str);
 
 		// Check if it's a valid file path
 		if path.exists() && path.is_file() {
+
+			// Create a buffer to store the read data
+			let mut buf = String::new();
 
 			// Attempt to open the file; if it fails, return the error
 			let file = File::open(path)?;  // Using `?` here to propagate any errors
@@ -60,7 +60,7 @@ pub fn unwrap_or_stdin<T: AsRef<str>>(
 		} else {
 
 			// If not a valid file, treat it as a string input
-			return Ok(buf.lines()
+			return Ok(input_str.lines()
 				.map(|line| line.trim())
 				.collect::<Vec<_>>()    // Collect trimmed lines into a Vec<&str>
 				.join("\n"));           // Join them into a single String
