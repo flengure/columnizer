@@ -159,7 +159,7 @@ impl Default for TableBuilder  {
 			max_decimal_digits:          2, // Default maximum decimal digits
 			decimal_separator:         '.', // Default decimal separator
 			use_thousand_separator:  false, // Default don't add thousand separator
-			thousand_separator:		   ',', // Default thousand seperator char ,
+			thousand_separator:        ',', // Default thousand seperator char ,
 			alignment:     Alignment::AUTO, // Default align numeric columns to the right
 			table:                    None, // Unknown prettytable
 			column_width_limits:      None, // Unknown column width limits
