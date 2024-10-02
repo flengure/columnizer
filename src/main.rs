@@ -1,5 +1,6 @@
 mod cli;
-mod io;
+//mod io;
+mod input;
 mod table;
 mod text;
 

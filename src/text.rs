@@ -1,5 +1,5 @@
 use clap::{Args, ValueEnum};
-use crate::io::{process_input, InputData};
+use crate::input;
 use std::fmt;
 use std::str::FromStr;
 use textwrap;
@@ -383,9 +383,9 @@ impl TextFormatter {
 		let mut formatter = TextFormatter::default();
 
 		// Attempt to process the input (text only), fallback to stdin if necessary
-		let text_data = match process_input(text, 5, 500) {
-			Ok(InputData::Text(content)) => content,  // If it's valid UTF-8, use it
-			Ok(InputData::Binary(_)) => {
+		let text_data = match input::data_or_stdin(text, 5, 500) {
+			Ok(input::Data::Text(content)) => content,  // If it's valid UTF-8, use it
+			Ok(input::Data::Binary(_)) => {
 				eprintln!("Error: Binary input is not supported.");
 				return formatter; // Return the default instance on error
 			},

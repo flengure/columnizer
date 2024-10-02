@@ -2,8 +2,10 @@ use eyre::{Result, eyre, Context};
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
+use std::sync::{Arc, Mutex};
+use std::thread;
 use std::thread::sleep;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 /// Reads a binary file from the specified path and returns its contents
 /// as a `Vec<u8>`.
