@@ -1,4 +1,4 @@
-use std::error::Error;
+use eyre::{Result, eyre, Context};
 use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::Path;
@@ -15,8 +15,8 @@ use std::time::Duration;
 /// # Arguments
 ///
 /// * `input` - An optional value that implements `AsRef<str>`. 
-///              If it corresponds to a valid file path, it will read from that file.
-///              If `None`, stdin is used as the input source.
+///			  If it corresponds to a valid file path, it will read from that file.
+///			  If `None`, stdin is used as the input source.
 /// * `max_attempts` - The number of times to retry reading from stdin if no input is provided.
 /// * `delay` - The number of milliseconds to wait between retry attempts.
 ///
@@ -33,7 +33,7 @@ use std::time::Duration;
 /// ```
 pub fn unwrap_or_stdin<T: AsRef<str>>(
 	input: Option<T>, max_attempts: usize, delay: u64
-) -> Result<String, Box<dyn Error>> {
+) -> Result<String> {
 
 	// If an input is provided, check if it's a valid file path or a string.
 	if let Some(input_data) = input {
@@ -47,23 +47,24 @@ pub fn unwrap_or_stdin<T: AsRef<str>>(
 			// Create a buffer to store the read data
 			let mut buf = String::new();
 
-			// Attempt to open the file; if it fails, return the error
-			let file = File::open(path)?;  // Using `?` here to propagate any errors
+			// Attempt to open the file; if it fails, return the error with context
+			let file = File::open(path)
+				.wrap_err_with(|| format!("Failed to open file: {}", input_str))?;
 			let mut reader = BufReader::new(file);
-			reader.read_to_string(&mut buf)?;
+			reader.read_to_string(&mut buf)
+				.wrap_err_with(|| format!("Failed to read from file: {}", input_str))?;
 
 			return Ok(buf.lines()
 				.map(|line| line.trim())
-				.collect::<Vec<_>>()   // Collect trimmed lines into a Vec<&str>
-				.join("\n"));          // Join them into a single String
+				.collect::<Vec<_>>() // Collect trimmed lines into a Vec<&str>
+				.join("\n"));        // Join them into a single String
 
 		} else {
-
 			// If not a valid file, treat it as a string input
 			return Ok(input_str.lines()
 				.map(|line| line.trim())
-				.collect::<Vec<_>>()    // Collect trimmed lines into a Vec<&str>
-				.join("\n"));           // Join them into a single String
+				.collect::<Vec<_>>() // Collect trimmed lines into a Vec<&str>
+				.join("\n"));        // Join them into a single String
 		}
 	}
 
@@ -75,29 +76,26 @@ pub fn unwrap_or_stdin<T: AsRef<str>>(
 	for attempt in 0..max_attempts {
 		match handle.read_to_string(&mut buf) {
 			Ok(0) => {
-
 				// No data read, retry after a delay
 				if attempt == max_attempts - 1 {
-					return Ok(String::new()); // Give up after max_attempts
+					return Err(eyre!("Failed to read input from stdin after {} attempts", max_attempts));
 				}
 				sleep(Duration::from_millis(delay));
 			}
 			Ok(_) => {
-
 				// Successfully read input, trim and return it
 				return Ok(buf.lines()
 					.map(|line| line.trim())
-					.collect::<Vec<_>>()  // Collect trimmed lines into a Vec<&str>
-					.join("\n"));         // Join them into a single String
+					.collect::<Vec<_>>() // Collect trimmed lines into a Vec<&str>
+					.join("\n"));        // Join them into a single String
 			}
 			Err(e) => {
-
-				// Error occurred, handle appropriately
-				return Err(Box::new(e));  // Return the error
+				// Error occurred, return with context
+				return Err(eyre!("Error reading from stdin: {}", e));
 			}
 		}
 	}
 
-	Ok(String::new()) // Return empty string after all attempts
+	// If nothing was read after all attempts, return an error
+	Err(eyre!("Failed to read input after {} attempts", max_attempts))
 }
-
