@@ -1,5 +1,5 @@
 use clap::{ Args };
-use crate::io::{ unwrap_or_stdin };
+use crate::io::{process_input, InputData};
 use crate::text::{ TextFormatter, Alignment, Frame, clean };
 pub use prettytable::{format, Cell, Row, Table};
 use unicode_width::UnicodeWidthStr;
@@ -181,11 +181,15 @@ impl TableBuilder {
 		// Initialize a default instance of TableBuilder
 		let mut builder = TableBuilder::default();
 
-		// Attempt to read input, falling back to stdin
-		let input_data = match unwrap_or_stdin(input, 5, 500) {
-			Ok(content) => content,
+		// Attempt to process the input (text only), fallback to stdin if necessary
+		let input_data = match process_input(input, 5, 500) {
+			Ok(InputData::Text(content)) => content,  // If it's valid UTF-8, use it
+			Ok(InputData::Binary(_)) => {
+				eprintln!("Error: Binary input is not supported.");
+				return builder; // Return the default instance on error
+			},
 			Err(e) => {
-				eprintln!("Error: {}", e);
+				eprintln!("Error: {}", e);  // Handle any other error (e.g., stdin failure)
 				return builder; // Return the default instance on error
 			}
 		};

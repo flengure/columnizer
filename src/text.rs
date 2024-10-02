@@ -1,5 +1,5 @@
 use clap::{Args, ValueEnum};
-use crate::io::unwrap_or_stdin;
+use crate::io::{process_input, InputData};
 use std::fmt;
 use std::str::FromStr;
 use textwrap;
@@ -60,9 +60,9 @@ pub fn right(text: Option<&str>, width: Option<usize>) -> String {
 /// # Returns
 /// A `String` containing the left-aligned formatted text.
 pub fn left(text: Option<&str>) -> String {
-    let text_string = text.map(|s| s.to_string());      // Convert Option<&str> to Option<String>
-    let mut formatter = TextFormatter::new(text_string);    // Pass the Option<String>
-    formatter.left()                                    // Return the formatted left-aligned text
+    let text_string = text.map(|s| s.to_string());       // Convert Option<&str> to Option<String>
+    let mut formatter = TextFormatter::new(text_string); // Pass the Option<String>
+    formatter.left()                                     // Return the formatted left-aligned text
 }
 
 /// Wraps the given text to the specified width.
@@ -382,11 +382,15 @@ impl TextFormatter {
 		// Initialize a default instance of TextFormatter
 		let mut formatter = TextFormatter::default();
 
-		// Attempt to read text, falling back to stdin if text is None
-		let text_data = match unwrap_or_stdin(text, 5, 500) {
-			Ok(content) => content,
+		// Attempt to process the input (text only), fallback to stdin if necessary
+		let text_data = match process_input(text, 5, 500) {
+			Ok(InputData::Text(content)) => content,  // If it's valid UTF-8, use it
+			Ok(InputData::Binary(_)) => {
+				eprintln!("Error: Binary input is not supported.");
+				return formatter; // Return the default instance on error
+			},
 			Err(e) => {
-				eprintln!("Error: {}", e);
+				eprintln!("Error: {}", e);  // Handle any other error (e.g., stdin failure)
 				return formatter; // Return the default instance on error
 			}
 		};
