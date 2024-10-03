@@ -156,7 +156,7 @@ pub fn data_or_stdin<T: AsRef<[u8]>>(input: Option<T>, max_attempts: usize, dela
 
 /// Processes input from a file or stdin.
 #[allow(dead_code)]
-pub fn file_or_stdin(path: Option<&Path>, max_attempts: usize, delay: u64) -> Result<Data> {
+pub fn file_or_stdin<T: AsRef<[u8]>>(path: Option<&Path>, max_attempts: usize, delay: u64) -> Result<Data> {
 
     // If path is provided, process it
     if let Some(input_path) = path {
