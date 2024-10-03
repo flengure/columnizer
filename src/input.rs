@@ -156,17 +156,18 @@ pub fn data_or_stdin<T: AsRef<[u8]>>(input: Option<T>, max_attempts: usize, dela
 
 /// Processes input from a file or stdin.
 #[allow(dead_code)]
-pub fn file_or_stdin<T: AsRef<[u8]>>(path: Option<&Path>, max_attempts: usize, delay: u64) -> Result<Data> {
+pub fn file_or_stdin<T: AsRef<[u8]>>(path: Option<T>, max_attempts: usize, delay: u64) -> Result<Data> {
 
-    // If path is provided, process it
-    if let Some(input_path) = path {
-        return binary_or_text_file(input_path); // Directly pass the input as bytes
-    }
+	// If path is provided, convert it to a Path
+	if let Some(input_path) = path {
+		let path_ref = Path::new(std::str::from_utf8(input_path.as_ref())?);
+		return binary_or_text_file(path_ref); // Pass the Path to the file processing function
+	}
 
-    // If input is None, read from stdin
-    // Convert delay from u64 milliseconds to Duration
-    let timeout = Duration::from_millis(delay);
-    read_stdin(max_attempts, timeout)
+	// If input is None, read from stdin
+	// Convert delay from u64 milliseconds to Duration
+	let timeout = Duration::from_millis(delay);
+	read_stdin(max_attempts, timeout)
 }
 
 
