@@ -3,9 +3,10 @@ mod cli;
 mod input;
 mod table;
 mod text;
+use eyre::Result;
 
 use clap::Parser;
 
-fn main() {
-	cli::run_cli(&cli::Cli::parse());
+fn main() -> Result<()>{
+    crate::cli::Cli::parse().run()
 }
