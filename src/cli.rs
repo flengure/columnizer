@@ -4,8 +4,10 @@ use crate::table::TableBuilder;
 use eyre::Result;
 
 #[derive(Parser)]
-#[command(version, about, long_about = None)]
-#[command(propagate_version = true)]
+#[command(
+    name  = "fmt", 
+    about = "Text formatter and Table Builder", 
+)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: FmtCommands,
